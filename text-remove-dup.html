@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本去重工具 - 在线智能去除重复内容</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <style>
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            }
+            .text-counter {
+                font-variant-numeric: tabular-nums;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header class="gradient-bg text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-font text-xl"></i>
+                <h1 class="text-xl font-bold">文本去重工具</h1>
+            </div>
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                返回工具列表
+            </a>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">文本去重</h2>
+            <p class="text-slate-600 mb-6">智能识别重复行、重复段落，支持多种去重模式，保留原始顺序</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- 左侧输入区域 -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-700">输入文本</h3>
+                        <div class="text-xs text-slate-500 text-counter" id="inputCounter">
+                            字符: <span id="inputChars">0</span> | 
+                            行数: <span id="inputLines">0</span> | 
+                            重复: <span id="inputDuplicates">0</span>
+                        </div>
+                    </div>
+                    
+                    <textarea id="inputText" placeholder="请粘贴或输入需要去重的文本，可以是多行内容..." 
+                        class="w-full h-[300px] p-3 border border-slate-300 rounded-lg resize-y font-mono text-sm"></textarea>
+                    
+                    <!-- 去重设置 -->
+                    <div class="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <h4 class="font-medium text-sm mb-2">去重设置</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">去重模式</label>
+                                <select id="deduplicateMode" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    <option value="line">按整行去重 (默认)</option>
+                                    <option value="paragraph">按段落去重 (空行分隔)</option>
+                                    <option value="sentence">按句子去重 (标点分隔)</option>
+                                    <option value="keyword">按关键词去重 (自定义)</option>
+                                </select>
+                            </div>
+                            
+                            <div id="keywordSettings" class="hidden">
+                                <label class="block text-xs text-slate-600 mb-1">关键词 (逗号分隔)</label>
+                                <input type="text" id="keywords" placeholder="例如: 苹果,香蕉,橙子" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                <label class="flex items-center text-xs text-slate-600 mt-1">
+                                    <input type="checkbox" id="caseSensitive" class="mr-2">
+                                    区分大小写
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <label class="flex items-center text-xs text-slate-600">
+                                    <input type="checkbox" id="keepEmptyLines" checked class="mr-2">
+                                    保留空行
+                                </label>
+                                <label class="flex items-center text-xs text-slate-600 ml-4">
+                                    <input type="checkbox" id="trimWhitespace" checked class="mr-2">
+                                    自动去除首尾空格
+                                </label>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <label class="flex items-center text-xs text-slate-600">
+                                    <input type="checkbox" id="keepOrder" checked class="mr-2">
+                                    保留原始顺序
+                                </label>
+                                <label class="flex items-center text-xs text-slate-600 ml-4">
+                                    <input type="checkbox" id="showRemoved" class="mr-2">
+                                    显示被移除的内容
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex gap-3">
+                        <button id="deduplicateBtn" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fa fa-filter mr-2"></i>开始去重
+                        </button>
+                        <button id="clearInputBtn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-colors">
+                            <i class="fa fa-times mr-1"></i>清空
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 右侧结果区域 -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-700">去重结果</h3>
+                        <div class="text-xs text-slate-500 text-counter" id="outputCounter">
+                            字符: <span id="outputChars">0</span> | 
+                            行数: <span id="outputLines">0</span> | 
+                            去重率: <span id="deduplicateRate">0</span>%
+                        </div>
+                    </div>
+                    
+                    <textarea id="outputText" placeholder="去重后的结果将显示在这里..." 
+                        class="w-full h-[300px] p-3 border border-slate-300 rounded-lg resize-y font-mono text-sm bg-slate-50" readonly></textarea>
+                    
+                    <!-- 移除内容预览 -->
+                    <div id="removedContainer" class="mt-4 bg-red-50 p-3 rounded-lg border border-red-100 hidden">
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="font-medium text-sm text-red-800">被移除的重复内容</h4>
+                            <span class="text-xs text-red-600" id="removedCount">共移除: 0 项</span>
+                        </div>
+                        <div id="removedContent" class="text-xs text-red-700 bg-white p-2 rounded max-h-[100px] overflow-auto font-mono"></div>
+                    </div>
+                    
+                    <div class="mt-4 flex gap-3">
+                        <button id="copyBtn" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fa fa-copy mr-2"></i>复制结果
+                        </button>
+                        <button id="downloadBtn" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fa fa-download mr-2"></i>导出文本
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 去重统计 -->
+            <div id="statsContainer" class="hidden bg-green-50 p-4 rounded-lg border border-green-100 mt-4">
+                <h4 class="font-medium text-green-800 mb-2">去重统计</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-green-600" id="statsOriginalLines">0</div>
+                        <div class="text-xs text-slate-600">原始行数</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-green-600" id="statsUniqueLines">0</div>
+                        <div class="text-xs text-slate-600">去重后行数</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-red-600" id="statsRemovedLines">0</div>
+                        <div class="text-xs text-slate-600">移除行数</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-blue-600" id="statsReductionRate">0%</div>
+                        <div class="text-xs text-slate-600">精简率</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-4 text-center text-sm">
+        <p>© 2025 在线工具集 - 所有操作均在本地完成，不会上传您的文本</p>
+    </footer>
+
+    <script>
+        // DOM元素
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const deduplicateMode = document.getElementById('deduplicateMode');
+        const keywordSettings = document.getElementById('keywordSettings');
+        const keywords = document.getElementById('keywords');
+        const caseSensitive = document.getElementById('caseSensitive');
+        const keepEmptyLines = document.getElementById('keepEmptyLines');
+        const trimWhitespace = document.getElementById('trimWhitespace');
+        const keepOrder = document.getElementById('keepOrder');
+        const showRemoved = document.getElementById('showRemoved');
+        const deduplicateBtn = document.getElementById('deduplicateBtn');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        // 计数器
+        const inputChars = document.getElementById('inputChars');
+        const inputLines = document.getElementById('inputLines');
+        const inputDuplicates = document.getElementById('inputDuplicates');
+        const outputChars = document.getElementById('outputChars');
+        const outputLines = document.getElementById('outputLines');
+        const deduplicateRate = document.getElementById('deduplicateRate');
+        
+        // 移除内容区域
+        const removedContainer = document.getElementById('removedContainer');
+        const removedCount = document.getElementById('removedCount');
+        const removedContent = document.getElementById('removedContent');
+        
+        // 统计区域
+        const statsContainer = document.getElementById('statsContainer');
+        const statsOriginalLines = document.getElementById('statsOriginalLines');
+        const statsUniqueLines = document.getElementById('statsUniqueLines');
+        const statsRemovedLines = document.getElementById('statsRemovedLines');
+        const statsReductionRate = document.getElementById('statsReductionRate');
+        
+        // 存储被移除的内容
+        let removedItems = [];
+
+        // 初始化
+        deduplicateMode.addEventListener('change', () => {
+            // 显示/隐藏关键词设置
+            keywordSettings.classList.toggle('hidden', deduplicateMode.value !== 'keyword');
+            // 更新输入统计
+            updateInputStats();
+        });
+        
+        // 实时更新输入统计
+        inputText.addEventListener('input', updateInputStats);
+        
+        // 更新输入统计
+        function updateInputStats() {
+            const text = inputText.value;
+            inputChars.textContent = text.length;
+            
+            // 计算行数
+            const lines = text.split('\n');
+            inputLines.textContent = lines.length;
+            
+            // 检测重复项
+            const uniqueLines = new Set();
+            let duplicateCount = 0;
+            
+            lines.forEach(line => {
+                const processedLine = trimWhitespace.checked ? line.trim() : line;
+                if (processedLine === '' && !keepEmptyLines.checked) return;
+                
+                if (uniqueLines.has(processedLine)) {
+                    duplicateCount++;
+                } else {
+                    uniqueLines.add(processedLine);
+                }
+            });
+            
+            inputDuplicates.textContent = duplicateCount;
+        }
+
+        // 清空输入
+        clearInputBtn.addEventListener('click', () => {
+            inputText.value = '';
+            outputText.value = '';
+            removedItems = [];
+            removedContainer.classList.add('hidden');
+            statsContainer.classList.add('hidden');
+            updateInputStats();
+            updateOutputStats('');
+        });
+
+        // 开始去重
+        deduplicateBtn.addEventListener('click', () => {
+            const text = inputText.value;
+            if (!text) {
+                alert('请输入需要去重的文本');
+                return;
+            }
+            
+            removedItems = [];
+            let result = '';
+            
+            // 根据不同模式进行去重
+            switch (deduplicateMode.value) {
+                case 'line':
+                    result = deduplicateByLine(text);
+                    break;
+                case 'paragraph':
+                    result = deduplicateByParagraph(text);
+                    break;
+                case 'sentence':
+                    result = deduplicateBySentence(text);
+                    break;
+                case 'keyword':
+                    result = deduplicateByKeyword(text);
+                    break;
+            }
+            
+            // 更新输出
+            outputText.value = result;
+            updateOutputStats(result);
+            
+            // 显示被移除的内容
+            if (showRemoved.checked && removedItems.length > 0) {
+                removedContainer.classList.remove('hidden');
+                removedCount.textContent = `共移除: ${removedItems.length} 项`;
+                removedContent.textContent = removedItems.join('\n---\n');
+            } else {
+                removedContainer.classList.add('hidden');
+            }
+            
+            // 更新统计
+            updateStats(text, result);
+        });
+
+        // 按行去重
+        function deduplicateByLine(text) {
+            const lines = text.split('\n');
+            const seen = new Set();
+            const uniqueLines = [];
+            
+            lines.forEach(line => {
+                // 处理空格
+                let processedLine = trimWhitespace.checked ? line.trim() : line;
+                
+                // 处理大小写
+                if (!caseSensitive.checked) {
+                    processedLine = processedLine.toLowerCase();
+                }
+                
+                // 空行处理
+                if (processedLine === '' && !keepEmptyLines.checked) {
+                    if (showRemoved.checked) removedItems.push(line);
+                    return;
+                }
+                
+                // 检查是否已存在
+                if (seen.has(processedLine)) {
+                    if (showRemoved.checked) removedItems.push(line);
+                } else {
+                    seen.add(processedLine);
+                    uniqueLines.push(line); // 保留原始行
+                }
+            });
+            
+            return uniqueLines.join('\n');
+        }
+
+        // 按段落去重（空行分隔）
+        function deduplicateByParagraph(text) {
+            // 按空行分割段落
+            const paragraphs = text.split(/\n\s*\n/);
+            const seen = new Set();
+            const uniqueParagraphs = [];
+            
+            paragraphs.forEach(para => {
+                let processedPara = trimWhitespace.checked ? para.trim() : para;
+                
+                if (!caseSensitive.checked) {
+                    processedPara = processedPara.toLowerCase();
+                }
+                
+                if (processedPara === '') {
+                    if (showRemoved.checked) removedItems.push(para);
+                    return;
+                }
+                
+                if (seen.has(processedPara)) {
+                    if (showRemoved.checked) removedItems.push(para);
+                } else {
+                    seen.add(processedPara);
+                    uniqueParagraphs.push(para);
+                }
+            });
+            
+            return uniqueParagraphs.join('\n\n');
+        }
+
+        // 按句子去重（标点分隔）
+        function deduplicateBySentence(text) {
+            // 按句子分隔符分割
+            const sentences = text.split(/[。！？；.!?;]/);
+            const seen = new Set();
+            const uniqueSentences = [];
+            
+            sentences.forEach(sentence => {
+                let processedSentence = trimWhitespace.checked ? sentence.trim() : sentence;
+                
+                if (!caseSensitive.checked) {
+                    processedSentence = processedSentence.toLowerCase();
+                }
+                
+                if (processedSentence === '') {
+                    if (showRemoved.checked) removedItems.push(sentence);
+                    return;
+                }
+                
+                if (seen.has(processedSentence)) {
+                    if (showRemoved.checked) removedItems.push(sentence);
+                } else {
+                    seen.add(processedSentence);
+                    uniqueSentences.push(sentence);
+                }
+            });
+            
+            return uniqueSentences.join('。');
+        }
+
+        // 按关键词去重
+        function deduplicateByKeyword(text) {
+            const keywordList = keywords.value.split(',').map(k => k.trim()).filter(k => k);
+            if (keywordList.length === 0) {
+                alert('请输入关键词');
+                return text;
+            }
+            
+            const lines = text.split('\n');
+            const keywordMap = new Map();
+            const uniqueLines = [];
+            
+            lines.forEach(line => {
+                let processedLine = trimWhitespace.checked ? line.trim() : line;
+                
+                if (!caseSensitive.checked) {
+                    processedLine = processedLine.toLowerCase();
+                }
+                
+                if (processedLine === '' && !keepEmptyLines.checked) {
+                    if (showRemoved.checked) removedItems.push(line);
+                    return;
+                }
+                
+                // 查找匹配的关键词
+                let matchedKeyword = null;
+                for (const keyword of keywordList) {
+                    const searchKeyword = caseSensitive.checked ? keyword : keyword.toLowerCase();
+                    if (processedLine.includes(searchKeyword)) {
+                        matchedKeyword = keyword;
+                        break;
+                    }
+                }
+                
+                // 如果没有匹配的关键词，保留
+                if (!matchedKeyword) {
+                    uniqueLines.push(line);
+                    return;
+                }
+                
+                // 检查该关键词是否已存在
+                if (keywordMap.has(matchedKeyword)) {
+                    if (showRemoved.checked) removedItems.push(line);
+                } else {
+                    keywordMap.set(matchedKeyword, true);
+                    uniqueLines.push(line);
+                }
+            });
+            
+            return uniqueLines.join('\n');
+        }
+
+        // 更新输出统计
+        function updateOutputStats(text) {
+            outputChars.textContent = text.length;
+            outputLines.textContent = text.split('\n').length;
+            
+            // 计算去重率
+            const originalCount = parseInt(inputLines.textContent);
+            const uniqueCount = text.split('\n').length;
+            const rate = originalCount > 0 
+                ? Math.round((1 - uniqueCount / originalCount) * 100) 
+                : 0;
+            
+            deduplicateRate.textContent = rate;
+        }
+
+        // 更新统计面板
+        function updateStats(originalText, uniqueText) {
+            const originalLines = originalText.split('\n').length;
+            const uniqueLines = uniqueText.split('\n').length;
+            const removedLines = originalLines - uniqueLines;
+            const reductionRate = originalLines > 0 
+                ? Math.round((removedLines / originalLines) * 100) 
+                : 0;
+            
+            statsOriginalLines.textContent = originalLines;
+            statsUniqueLines.textContent = uniqueLines;
+            statsRemovedLines.textContent = removedLines;
+            statsReductionRate.textContent = `${reductionRate}%`;
+            
+            statsContainer.classList.remove('hidden');
+        }
+
+        // 复制结果
+        copyBtn.addEventListener('click', async () => {
+            const text = outputText.value;
+            if (!text) {
+                alert('没有可复制的内容');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                // 显示复制成功提示
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa fa-check mr-2"></i>复制成功';
+                copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }, 2000);
+            } catch (err) {
+                alert('复制失败，请手动复制');
+                console.error(err);
+            }
+        });
+
+        // 下载文本
+        downloadBtn.addEventListener('click', () => {
+            const text = outputText.value;
+            if (!text) {
+                alert('没有可导出的内容');
+                return;
+            }
+            
+            // 创建Blob
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            // 创建下载链接
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `去重文本_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // 初始化统计
+        updateInputStats();
+        updateOutputStats('');
+    </script>
+</body>
+</html>

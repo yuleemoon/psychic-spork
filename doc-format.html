@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档格式转换 - 在线转换Excel/CSV/PDF/Word</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <!-- 引入SheetJS处理Excel/CSV -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- 引入PDF.js处理PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- 引入docx转换库 -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            }
+            .drop-area {
+                border: 2px dashed #cbd5e1;
+                transition: all 0.3s ease;
+            }
+            .drop-area.active {
+                border-color: #3b82f6;
+                background-color: #eff6ff;
+            }
+        }
+        .pdf-preview-container {
+            height: 500px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header class="gradient-bg text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-file-text-o text-xl"></i>
+                <h1 class="text-xl font-bold">文档格式转换工具</h1>
+            </div>
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                返回工具列表
+            </a>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="mb-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fa fa-info-circle text-blue-500 mt-1 mr-2"></i>
+                    <div>
+                        <h4 class="font-medium text-blue-800">支持格式</h4>
+                        <p class="text-sm text-blue-700">Excel (xlsx/xls) ↔ CSV、Word (docx) → PDF、PDF → 文本、Excel → PDF</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">文档格式转换</h2>
+            <p class="text-slate-600 mb-6">支持Excel、CSV、PDF、Word格式互转，提供实时预览功能</p>
+            
+            <!-- 上传区域 -->
+            <div id="dropArea" class="drop-area rounded-lg p-8 text-center mb-6">
+                <i class="fa fa-cloud-upload text-4xl text-slate-400 mb-3"></i>
+                <p class="text-slate-600 mb-2">点击或拖拽文档到此处上传</p>
+                <p class="text-sm text-slate-400">支持XLSX、XLS、CSV、DOCX、PDF格式，最大支持20MB</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.docx,.pdf" class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    选择文档
+                </button>
+            </div>
+
+            <!-- 转换设置 -->
+            <div id="convertSettings" class="hidden mb-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <!-- 左侧设置面板 -->
+                    <div class="lg:col-span-1">
+                        <h3 class="font-bold mb-3 text-slate-700">转换设置</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-600 mb-1">输出格式</label>
+                                <select id="outputFormat" class="w-full border border-slate-300 rounded-lg p-2">
+                                    <option value="">请选择输出格式</option>
+                                    <!-- Excel/CSV选项 -->
+                                    <optgroup label="Excel/CSV转换">
+                                        <option value="xlsx">Excel (.xlsx)</option>
+                                        <option value="csv">CSV (.csv)</option>
+                                        <option value="pdf">PDF (.pdf)</option>
+                                    </optgroup>
+                                    <!-- Word选项 -->
+                                    <optgroup label="Word转换">
+                                        <option value="pdf_from_docx">PDF (.pdf)</option>
+                                        <option value="txt_from_docx">纯文本 (.txt)</option>
+                                    </optgroup>
+                                    <!-- PDF选项 -->
+                                    <optgroup label="PDF转换">
+                                        <option value="txt_from_pdf">纯文本 (.txt)</option>
+                                        <option value="csv_from_pdf">表格提取 (.csv)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            
+                            <!-- Excel/CSV高级设置 -->
+                            <div id="excelSettings" class="hidden">
+                                <h4 class="font-medium text-sm mb-2">Excel/CSV设置</h4>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="flex items-center text-xs text-slate-600">
+                                            <input type="checkbox" id="includeHeader" checked class="mr-2">
+                                            第一行作为表头
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label class="flex items-center text-xs text-slate-600">
+                                            <input type="checkbox" id="allSheets" class="mr-2">
+                                            转换所有工作表
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-600 mb-1">工作表名称</label>
+                                        <input type="text" id="sheetName" placeholder="默认第一个工作表" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- PDF设置 -->
+                            <div id="pdfSettings" class="hidden">
+                                <h4 class="font-medium text-sm mb-2">PDF设置</h4>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="block text-xs text-slate-600 mb-1">页面范围</label>
+                                        <input type="text" id="pdfPages" placeholder="例如: 1-5 或 全部" value="全部" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="flex items-center text-xs text-slate-600">
+                                            <input type="checkbox" id="pdfWithFormatting" checked class="mr-2">
+                                            保留格式
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-3">
+                                <button id="convertBtn" class="flex-1 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    开始转换
+                                </button>
+                                <button id="resetBtn" class="flex-1 bg-slate-600 text-white px-6 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                                    重置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧预览区域 -->
+                    <div class="lg:col-span-2">
+                        <h3 class="font-bold mb-3 text-slate-700">文档预览</h3>
+                        <div id="previewContainer" class="border border-slate-200 rounded-lg p-3 bg-slate-50 min-h-[400px] overflow-auto">
+                            <div class="flex items-center justify-center h-full text-slate-500">
+                                <div class="text-center">
+                                    <i class="fa fa-file-text-o text-4xl mb-2"></i>
+                                    <p>上传文档后将显示预览</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 转换结果 -->
+            <div id="resultArea" class="hidden mb-6">
+                <h3 class="font-bold mb-3 text-slate-700">转换结果</h3>
+                <div id="resultContainer" class="border border-slate-200 rounded-lg p-4 bg-slate-50 mb-4 overflow-auto max-h-[400px]"></div>
+                
+                <div class="flex flex-wrap gap-3">
+                    <button id="downloadBtn" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fa fa-download mr-2"></i>下载转换后的文件
+                    </button>
+                    <button id="convertAnotherBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        转换其他文档
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-4 text-center text-sm">
+        <p>© 2025 在线工具集 - 所有操作均在本地完成，不会上传您的文档</p>
+    </footer>
+
+    <script>
+        // DOM元素
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const convertSettings = document.getElementById('convertSettings');
+        const outputFormat = document.getElementById('outputFormat');
+        const excelSettings = document.getElementById('excelSettings');
+        const pdfSettings = document.getElementById('pdfSettings');
+        const includeHeader = document.getElementById('includeHeader');
+        const allSheets = document.getElementById('allSheets');
+        const sheetName = document.getElementById('sheetName');
+        const pdfPages = document.getElementById('pdfPages');
+        const pdfWithFormatting = document.getElementById('pdfWithFormatting');
+        const convertBtn = document.getElementById('convertBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const previewContainer = document.getElementById('previewContainer');
+        const resultArea = document.getElementById('resultArea');
+        const resultContainer = document.getElementById('resultContainer');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const convertAnotherBtn = document.getElementById('convertAnotherBtn');
+        
+        // 全局变量
+        let originalFile = null;
+        let workbook = null;
+        let pdfDocument = null;
+        let convertedData = null;
+        let convertedFormat = '';
+
+        // 初始化输出格式选择
+        outputFormat.addEventListener('change', () => {
+            // 隐藏所有设置面板
+            excelSettings.classList.add('hidden');
+            pdfSettings.classList.add('hidden');
+            
+            // 根据输出格式显示对应设置
+            const format = outputFormat.value;
+            if (format === 'xlsx' || format === 'csv' || format === 'pdf') {
+                excelSettings.classList.remove('hidden');
+            } else if (format === 'txt_from_pdf' || format === 'csv_from_pdf') {
+                pdfSettings.classList.remove('hidden');
+            }
+        });
+
+        // 拖拽功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('active');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('active');
+        }
+
+        // 处理文件上传
+        dropArea.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const droppedFiles = dt.files;
+            handleFileList(droppedFiles);
+        }
+
+        function handleFiles() {
+            handleFileList(this.files);
+        }
+
+        function handleFileList(fileList) {
+            const file = fileList[0];
+            if (!file) return;
+            
+            originalFile = file;
+            const fileName = file.name;
+            const fileExt = fileName.split('.').pop().toLowerCase();
+            
+            // 重置界面
+            resultArea.classList.add('hidden');
+            convertSettings.classList.remove('hidden');
+            outputFormat.value = '';
+            
+            // 根据文件类型设置默认输出格式
+            if (fileExt === 'xlsx' || fileExt === 'xls' || fileExt === 'csv') {
+                outputFormat.innerHTML = `
+                    <option value="">请选择输出格式</option>
+                    <option value="xlsx">Excel (.xlsx)</option>
+                    <option value="csv">CSV (.csv)</option>
+                    <option value="pdf">PDF (.pdf)</option>
+                `;
+                previewExcelCSV(file);
+            } else if (fileExt === 'docx') {
+                outputFormat.innerHTML = `
+                    <option value="">请选择输出格式</option>
+                    <option value="pdf_from_docx">PDF (.pdf)</option>
+                    <option value="txt_from_docx">纯文本 (.txt)</option>
+                `;
+                previewDocx(file);
+            } else if (fileExt === 'pdf') {
+                outputFormat.innerHTML = `
+                    <option value="">请选择输出格式</option>
+                    <option value="txt_from_pdf">纯文本 (.txt)</option>
+                    <option value="csv_from_pdf">表格提取 (.csv)</option>
+                `;
+                previewPdf(file);
+            }
+        }
+
+        // 预览Excel/CSV文件
+        function previewExcelCSV(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // 读取Excel/CSV文件
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 获取第一个工作表
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    // 转换为HTML表格
+                    const html = XLSX.utils.sheet_to_html(worksheet, { id: 'preview-table' });
+                    
+                    // 显示预览
+                    previewContainer.innerHTML = `
+                        <div class="mb-2 flex justify-between items-center">
+                            <div>
+                                <p class="font-medium">工作表: ${sheetName}</p>
+                                <p class="text-xs text-slate-500">共 ${worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']).e.r + 1 : 0} 行数据</p>
+                            </div>
+                            <div class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                ${file.name}
+                            </div>
+                        </div>
+                        <div class="overflow-auto">
+                            ${html}
+                        </div>
+                    `;
+                    
+                    // 美化表格
+                    const table = previewContainer.querySelector('table');
+                    if (table) {
+                        table.className = 'min-w-full divide-y divide-slate-200';
+                        const ths = table.querySelectorAll('th');
+                        ths.forEach(th => {
+                            th.className = 'px-3 py-2 bg-slate-50 text-left text-xs font-medium text-slate-500 uppercase tracking-wider';
+                        });
+                        const tds = table.querySelectorAll('td');
+                        tds.forEach(td => {
+                            td.className = 'px-3 py-2 whitespace-nowrap text-sm text-slate-700';
+                        });
+                    }
+                } catch (error) {
+                    previewContainer.innerHTML = `
+                        <div class="text-center text-red-500 py-8">
+                            <i class="fa fa-exclamation-circle text-2xl mb-2"></i>
+                            <p>文件预览失败: ${error.message}</p>
+                        </div>
+                    `;
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 预览Word文档
+        function previewDocx(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // 使用mammoth转换docx为HTML
+                    mammoth.convertToHtml({ arrayBuffer: e.target.result })
+                        .then(function(result) {
+                            const html = result.value;
+                            
+                            previewContainer.innerHTML = `
+                                <div class="mb-2 flex justify-between items-center">
+                                    <div class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                        ${file.name}
+                                    </div>
+                                </div>
+                                <div class="prose max-w-none">
+                                    ${html}
+                                </div>
+                            `;
+                        })
+                        .catch(function(error) {
+                            previewContainer.innerHTML = `
+                                <div class="text-center text-red-500 py-8">
+                                    <i class="fa fa-exclamation-circle text-2xl mb-2"></i>
+                                    <p>文件预览失败: ${error.message}</p>
+                                </div>
+                            `;
+                            console.error(error);
+                        });
+                } catch (error) {
+                    previewContainer.innerHTML = `
+                        <div class="text-center text-red-500 py-8">
+                            <i class="fa fa-exclamation-circle text-2xl mb-2"></i>
+                            <p>文件预览失败: ${error.message}</p>
+                        </div>
+                    `;
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 预览PDF文档
+        function previewPdf(file) {
+            // 设置PDF.js的worker路径
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // 加载PDF文档
+                    const typedArray = new Uint8Array(e.target.result);
+                    
+                    pdfjsLib.getDocument(typedArray).promise.then(function(pdfDoc) {
+                        pdfDocument = pdfDoc;
+                        const numPages = pdfDoc.numPages;
+                        
+                        previewContainer.innerHTML = `
+                            <div class="mb-2 flex justify-between items-center">
+                                <div>
+                                    <p class="font-medium">PDF文档预览</p>
+                                    <p class="text-xs text-slate-500">共 ${numPages} 页</p>
+                                </div>
+                                <div class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    ${file.name}
+                                </div>
+                            </div>
+                            <div class="pdf-preview-container" id="pdfViewer"></div>
+                            <div class="mt-2 flex justify-center gap-2">
+                                <button onclick="renderPdfPage(1)" class="px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm">第1页</button>
+                                ${numPages > 1 ? `<button onclick="renderPdfPage(2)" class="px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm">第2页</button>` : ''}
+                                ${numPages > 2 ? `<button onclick="renderPdfPage(3)" class="px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm">第3页</button>` : ''}
+                            </div>
+                        `;
+                        
+                        // 渲染第一页
+                        renderPdfPage(1);
+                    }).catch(function(error) {
+                        previewContainer.innerHTML = `
+                            <div class="text-center text-red-500 py-8">
+                                <i class="fa fa-exclamation-circle text-2xl mb-2"></i>
+                                <p>PDF预览失败: ${error.message}</p>
+                            </div>
+                        `;
+                        console.error(error);
+                    });
+                } catch (error) {
+                    previewContainer.innerHTML = `
+                        <div class="text-center text-red-500 py-8">
+                            <i class="fa fa-exclamation-circle text-2xl mb-2"></i>
+                            <p>文件预览失败: ${error.message}</p>
+                        </div>
+                    `;
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 渲染PDF页面
+        window.renderPdfPage = function(pageNum) {
+            if (!pdfDocument) return;
+            
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            pdfDocument.getPage(pageNum).then(function(page) {
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale: scale });
+                
+                // 创建canvas元素
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.className = 'mx-auto my-2 border border-slate-200';
+                
+                // 清空预览区域
+                pdfViewer.innerHTML = '';
+                pdfViewer.appendChild(canvas);
+                
+                // 渲染页面
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                const renderTask = page.render(renderContext);
+                
+                renderTask.promise.then(function() {
+                    console.log(`Page ${pageNum} rendered`);
+                });
+            });
+        };
+
+        // 转换按钮点击事件
+        convertBtn.addEventListener('click', async () => {
+            if (!originalFile || !outputFormat.value) {
+                alert('请选择输出格式');
+                return;
+            }
+            
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>转换中...';
+            
+            try {
+                const format = outputFormat.value;
+                convertedFormat = format;
+                
+                if (format === 'xlsx' || format === 'csv' || format === 'pdf') {
+                    await convertExcelCSV(format);
+                } else if (format === 'pdf_from_docx' || format === 'txt_from_docx') {
+                    await convertDocx(format);
+                } else if (format === 'txt_from_pdf' || format === 'csv_from_pdf') {
+                    await convertPdf(format);
+                }
+                
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '开始转换';
+                convertSettings.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+            } catch (error) {
+                alert(`转换失败: ${error.message}`);
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '开始转换';
+                console.error(error);
+            }
+        });
+
+        // 转换Excel/CSV
+        async function convertExcelCSV(targetFormat) {
+            if (!workbook) return;
+            
+            const sheetNameToUse = sheetName.value || workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetNameToUse];
+            
+            if (targetFormat === 'xlsx') {
+                // 转换为XLSX
+                const newWorkbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(newWorkbook, worksheet, sheetNameToUse);
+                
+                // 生成文件
+                const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
+                convertedData = new Blob([wbout], { type: 'application/octet-stream' });
+                
+                // 显示结果
+                resultContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fa fa-file-excel-o text-4xl text-green-500 mb-2"></i>
+                        <h4 class="font-medium mb-1">转换完成</h4>
+                        <p class="text-sm text-slate-600">已将文件转换为Excel格式</p>
+                        <p class="text-xs text-slate-500 mt-2">工作表: ${sheetNameToUse}</p>
+                    </div>
+                `;
+            } else if (targetFormat === 'csv') {
+                // 转换为CSV
+                const csv = XLSX.utils.sheet_to_csv(worksheet);
+                convertedData = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                
+                // 显示结果
+                resultContainer.innerHTML = `
+                    <div class="mb-2">
+                        <h4 class="font-medium mb-2">CSV预览 (前20行)</h4>
+                        <pre class="bg-slate-100 p-3 rounded text-xs overflow-auto max-h-[300px]">${csv.split('\n').slice(0, 20).join('\n')}${csv.split('\n').length > 20 ? '\n...' : ''}</pre>
+                    </div>
+                `;
+            } else if (targetFormat === 'pdf') {
+                // Excel转PDF (简化版，仅生成表格HTML)
+                const html = XLSX.utils.sheet_to_html(worksheet);
+                convertedData = new Blob([html], { type: 'text/html;charset=utf-8;' });
+                
+                // 显示结果
+                resultContainer.innerHTML = `
+                    <div class="mb-2">
+                        <h4 class="font-medium mb-2">PDF预览 (HTML版)</h4>
+                        <div class="overflow-auto max-h-[300px] border border-slate-200 p-2 rounded">
+                            ${html}
+                        </div>
+                        <p class="text-xs text-red-500 mt-2">提示: 完整PDF生成需要服务器支持，此处生成HTML版本</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 转换Word文档
+        async function convertDocx(targetFormat) {
+            const reader = new FileReader();
+            
+            return new Promise((resolve, reject) => {
+                reader.onload = async function(e) {
+                    try {
+                        if (targetFormat === 'txt_from_docx') {
+                            // Word转纯文本
+                            const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+                            const text = result.value;
+                            
+                            convertedData = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+                            
+                            // 显示结果
+                            resultContainer.innerHTML = `
+                                <div class="mb-2">
+                                    <h4 class="font-medium mb-2">纯文本预览 (前500字符)</h4>
+                                    <pre class="bg-slate-100 p-3 rounded text-xs overflow-auto max-h-[300px]">${text.substring(0, 500)}${text.length > 500 ? '...' : ''}</pre>
+                                    <p class="text-xs text-slate-500 mt-2">总字符数: ${text.length}</p>
+                                </div>
+                            `;
+                        } else if (targetFormat === 'pdf_from_docx') {
+                            // Word转PDF (简化版，生成HTML)
+                            const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result });
+                            const html = result.value;
+                            
+                            convertedData = new Blob([html], { type: 'text/html;charset=utf-8;' });
+                            
+                            // 显示结果
+                            resultContainer.innerHTML = `
+                                <div class="mb-2">
+                                    <h4 class="font-medium mb-2">PDF预览 (HTML版)</h4>
+                                    <div class="border border-slate-200 p-3 rounded overflow-auto max-h-[300px]">
+                                        ${html}
+                                    </div>
+                                    <p class="text-xs text-red-500 mt-2">提示: 完整PDF生成需要服务器支持，此处生成HTML版本</p>
+                                </div>
+                            `;
+                        }
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.readAsArrayBuffer(originalFile);
+            });
+        }
+
+        // 转换PDF文档
+        async function convertPdf(targetFormat) {
+            if (!pdfDocument) {
+                throw new Error('PDF文档未加载');
+            }
+            
+            let fullText = '';
+            const numPages = pdfDocument.numPages;
+            const pagesRange = pdfPages.value || '全部';
+            
+            // 解析页面范围
+            let pagesToProcess = [];
+            if (pagesRange === '全部') {
+                pagesToProcess = Array.from({ length: numPages }, (_, i) => i + 1);
+            } else if (pagesRange.includes('-')) {
+                const [start, end] = pagesRange.split('-').map(Number);
+                pagesToProcess = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+            } else {
+                pagesToProcess = pagesRange.split(',').map(Number);
+            }
+            
+            // 提取文本
+            for (const pageNum of pagesToProcess) {
+                if (pageNum > numPages) continue;
+                
+                const page = await pdfDocument.getPage(pageNum);
+                const content = await page.getTextContent();
+                const pageText = content.items.map(item => item.str).join(' ');
+                fullText += `--- 第${pageNum}页 ---\n${pageText}\n\n`;
+            }
+            
+            if (targetFormat === 'txt_from_pdf') {
+                // PDF转纯文本
+                convertedData = new Blob([fullText], { type: 'text/plain;charset=utf-8;' });
+                
+                // 显示结果
+                resultContainer.innerHTML = `
+                    <div class="mb-2">
+                        <h4 class="font-medium mb-2">PDF文本提取结果</h4>
+                        <pre class="bg-slate-100 p-3 rounded text-xs overflow-auto max-h-[300px]">${fullText.substring(0, 1000)}${fullText.length > 1000 ? '\n...' : ''}</pre>
+                        <p class="text-xs text-slate-500 mt-2">提取页数: ${pagesToProcess.length}/${numPages}，总字符数: ${fullText.length}</p>
+                    </div>
+                `;
+            } else if (targetFormat === 'csv_from_pdf') {
+                // PDF表格提取 (简化版，仅按换行分割)
+                const lines = fullText.split('\n').filter(line => line.trim());
+                const csv = lines.join('\n');
+                convertedData = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                
+                // 显示结果
+                resultContainer.innerHTML = `
+                    <div class="mb-2">
+                        <h4 class="font-medium mb-2">PDF表格提取结果 (简化版)</h4>
+                        <pre class="bg-slate-100 p-3 rounded text-xs overflow-auto max-h-[300px]">${csv.substring(0, 1000)}${csv.length > 1000 ? '\n...' : ''}</pre>
+                        <p class="text-xs text-slate-500 mt-2">提取行数: ${lines.length}，总字符数: ${csv.length}</p>
+                        <p class="text-xs text-red-500">提示: 完整表格识别需要专业OCR库支持</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 下载按钮
+        downloadBtn.addEventListener('click', () => {
+            if (!convertedData) return;
+            
+            // 生成文件名
+            const originalName = originalFile.name.split('.').slice(0, -1).join('.');
+            let ext = '';
+            
+            switch (convertedFormat) {
+                case 'xlsx': ext = '.xlsx'; break;
+                case 'csv': ext = '.csv'; break;
+                case 'pdf': 
+                case 'pdf_from_docx': ext = '.pdf'; break;
+                case 'txt_from_docx': 
+                case 'txt_from_pdf': ext = '.txt'; break;
+                case 'csv_from_pdf': ext = '.csv'; break;
+                default: ext = '.bin';
+            }
+            
+            // 处理PDF特殊情况（实际生成的是HTML）
+            if ((convertedFormat === 'pdf' || convertedFormat === 'pdf_from_docx') && convertedData.type.includes('html')) {
+                ext = '.html';
+            }
+            
+            const fileName = `${originalName}_converted${ext}`;
+            
+            // 下载文件
+            const url = URL.createObjectURL(convertedData);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // 重置按钮
+        resetBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            originalFile = null;
+            workbook = null;
+            pdfDocument = null;
+            convertedData = null;
+            
+            convertSettings.classList.add('hidden');
+            resultArea.classList.add('hidden');
+            previewContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full text-slate-500">
+                    <div class="text-center">
+                        <i class="fa fa-file-text-o text-4xl mb-2"></i>
+                        <p>上传文档后将显示预览</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        // 转换其他文档
+        convertAnotherBtn.addEventListener('click', () => {
+            resultArea.classList.add('hidden');
+            convertSettings.classList.remove('hidden');
+            fileInput.value = '';
+        });
+    </script>
+</body>
+</html>
