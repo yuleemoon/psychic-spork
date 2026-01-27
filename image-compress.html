@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片压缩工具 - 在线无损压缩</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
+    <style>
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            }
+            .drop-area {
+                border: 2px dashed #cbd5e1;
+                transition: all 0.3s ease;
+            }
+            .drop-area.active {
+                border-color: #3b82f6;
+                background-color: #eff6ff;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header class="gradient-bg text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-compress text-xl"></i>
+                <h1 class="text-xl font-bold">图片压缩工具</h1>
+            </div>
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                返回工具列表
+            </a>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8 max-w-3xl">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">图片压缩</h2>
+            <p class="text-slate-600 mb-6">无损压缩图片大小，节省存储空间，支持JPG、PNG、WebP等格式</p>
+            
+            <!-- 上传区域 -->
+            <div id="dropArea" class="drop-area rounded-lg p-8 text-center mb-6">
+                <i class="fa fa-cloud-upload text-4xl text-slate-400 mb-3"></i>
+                <p class="text-slate-600 mb-2">点击或拖拽图片到此处上传</p>
+                <p class="text-sm text-slate-400">支持单张或多张图片，最大支持10MB/张</p>
+                <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    选择图片
+                </button>
+            </div>
+
+            <!-- 压缩设置 -->
+            <div class="mb-6">
+                <h3 class="font-bold mb-3 text-slate-700">压缩设置</h3>
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm text-slate-600 mb-1">压缩质量</label>
+                        <input type="range" id="quality" min="0" max="100" value="80" class="w-full">
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>低质量</span>
+                            <span id="qualityValue">80%</span>
+                            <span>高质量</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm text-slate-600 mb-1">压缩方式</label>
+                        <select id="compressType" class="w-full border border-slate-300 rounded-lg p-2">
+                            <option value="auto">自动（推荐）</option>
+                            <option value="lossless">无损压缩</option>
+                            <option value="lossy">有损压缩</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预览区域 -->
+            <div id="previewArea" class="hidden mb-6">
+                <h3 class="font-bold mb-3 text-slate-700">预览与结果</h3>
+                <div id="previewContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <button id="compressBtn" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    开始压缩
+                </button>
+            </div>
+
+            <!-- 结果区域 -->
+            <div id="resultArea" class="hidden mb-6">
+                <h3 class="font-bold mb-3 text-slate-700">压缩完成</h3>
+                <div id="resultContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <button id="downloadAllBtn" class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fa fa-download mr-2"></i>下载所有图片
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-4 text-center text-sm">
+        <p>© 2025 在线工具集 - 所有操作均在本地完成，不会上传您的图片</p>
+    </footer>
+
+    <script>
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const previewContainer = document.getElementById('previewContainer');
+        const resultArea = document.getElementById('resultArea');
+        const resultContainer = document.getElementById('resultContainer');
+        const qualitySlider = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+        const compressBtn = document.getElementById('compressBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        
+        let files = [];
+        let compressedBlobs = [];
+
+        // 更新质量显示
+        qualitySlider.addEventListener('input', () => {
+            qualityValue.textContent = `${qualitySlider.value}%`;
+        });
+
+        // 拖拽功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('active');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('active');
+        }
+
+        // 处理文件上传
+        dropArea.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const droppedFiles = dt.files;
+            handleFileList(droppedFiles);
+        }
+
+        function handleFiles() {
+            handleFileList(this.files);
+        }
+
+        function handleFileList(fileList) {
+            files = Array.from(fileList).filter(file => file.type.startsWith('image/'));
+            
+            if (files.length > 0) {
+                previewArea.classList.remove('hidden');
+                previewContainer.innerHTML = '';
+                
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const item = document.createElement('div');
+                        item.className = 'border border-slate-200 rounded-lg p-3 bg-slate-50';
+                        item.innerHTML = `
+                            <div class="relative aspect-video overflow-hidden rounded mb-2">
+                                <img src="${e.target.result}" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-sm text-slate-600">
+                                <p>${file.name}</p>
+                                <p>大小: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                        `;
+                        previewContainer.appendChild(item);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+
+        // 压缩图片
+        compressBtn.addEventListener('click', async () => {
+            compressBtn.disabled = true;
+            compressBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>压缩中...';
+            resultContainer.innerHTML = '';
+            compressedBlobs = [];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                await compressImage(file, i);
+            }
+
+            compressBtn.disabled = false;
+            compressBtn.innerHTML = '开始压缩';
+            previewArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+        });
+
+        // 使用Compressor.js压缩图片
+        function compressImage(file, index) {
+            return new Promise((resolve) => {
+                const compressType = document.getElementById('compressType').value;
+                const quality = qualitySlider.value / 100;
+
+                new Compressor(file, {
+                    quality: quality,
+                    maxWidth: 1920,
+                    maxHeight: 1080,
+                    convertSize: compressType === 'lossless' ? Infinity : 500000,
+                    success(result) {
+                        compressedBlobs.push(result);
+                        
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const originalSize = (file.size / 1024 / 1024).toFixed(2);
+                            const compressedSize = (result.size / 1024 / 1024).toFixed(2);
+                            const savePercent = Math.round((1 - result.size / file.size) * 100);
+                            
+                            const item = document.createElement('div');
+                            item.className = 'border border-slate-200 rounded-lg p-3 bg-slate-50';
+                            item.innerHTML = `
+                                <div class="relative aspect-video overflow-hidden rounded mb-2">
+                                    <img src="${e.target.result}" class="w-full h-full object-contain">
+                                </div>
+                                <div class="text-sm text-slate-600">
+                                    <p>${file.name}</p>
+                                    <p>原大小: ${originalSize} MB → 压缩后: ${compressedSize} MB</p>
+                                    <p class="text-green-600">节省了 ${savePercent}%</p>
+                                </div>
+                                <button onclick="downloadFile(${index})" class="mt-2 w-full bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition-colors">
+                                    <i class="fa fa-download mr-1"></i>下载
+                                </button>
+                            `;
+                            resultContainer.appendChild(item);
+                            resolve();
+                        };
+                        reader.readAsDataURL(result);
+                    },
+                    error(err) {
+                        console.error(err);
+                        alert('压缩失败: ' + err.message);
+                        resolve();
+                    }
+                });
+            });
+        }
+
+        // 下载单个文件
+        window.downloadFile = function(index) {
+            const blob = compressedBlobs[index];
+            const file = files[index];
+            const fileName = file.name.replace(/\.\w+$/, '') + '_compressed' + file.name.match(/\.\w+$/)[0];
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // 下载所有文件
+        downloadAllBtn.addEventListener('click', () => {
+            if (compressedBlobs.length === 1) {
+                downloadFile(0);
+            } else if (compressedBlobs.length > 1) {
+                alert('批量下载功能需要引入JSZip库，单文件下载已可用');
+                // 实际项目中可引入JSZip实现批量下载
+                compressedBlobs.forEach((_, index) => downloadFile(index));
+            }
+        });
+    </script>
+</body>
+</html>
