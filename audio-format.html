@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频格式转换 - 在线转换MP3/WAV/FLAC/OGG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <!-- 引入FFmpeg.wasm用于音频处理 -->
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+    <style>
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            }
+            .drop-area {
+                border: 2px dashed #cbd5e1;
+                transition: all 0.3s ease;
+            }
+            .drop-area.active {
+                border-color: #3b82f6;
+                background-color: #eff6ff;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header class="gradient-bg text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-file-audio-o text-xl"></i>
+                <h1 class="text-xl font-bold">音频格式转换工具</h1>
+            </div>
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                返回工具列表
+            </a>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="mb-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fa fa-info-circle text-blue-500 mt-1 mr-2"></i>
+                    <div>
+                        <h4 class="font-medium text-blue-800">首次使用提示</h4>
+                        <p class="text-sm text-blue-700">本工具使用FFmpeg.wasm在浏览器中处理音频，首次加载可能需要下载约30MB的资源，请耐心等待。所有处理均在本地完成，不会上传您的音频文件。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">音频格式转换</h2>
+            <p class="text-slate-600 mb-6">支持MP3、WAV、FLAC、OGG等格式互转，可调整音质、比特率，支持音频裁剪和合并</p>
+            
+            <!-- 上传区域 -->
+            <div id="dropArea" class="drop-area rounded-lg p-8 text-center mb-6">
+                <i class="fa fa-cloud-upload text-4xl text-slate-400 mb-3"></i>
+                <p class="text-slate-600 mb-2">点击或拖拽音频文件到此处上传</p>
+                <p class="text-sm text-slate-400">支持MP3、WAV、FLAC、OGG、AAC等格式，可批量上传，单文件最大50MB</p>
+                <input type="file" id="fileInput" accept="audio/*" multiple class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    选择音频文件
+                </button>
+            </div>
+
+            <!-- 加载状态 -->
+            <div id="loadingState" class="hidden text-center py-8 mb-6">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
+                <p class="text-slate-700" id="loadingText">正在加载音频处理引擎...</p>
+            </div>
+
+            <!-- 转换设置 -->
+            <div id="convertSettings" class="hidden mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h3 class="font-bold mb-3 text-slate-700">输出设置</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-600 mb-1">输出格式</label>
+                                <select id="outputFormat" class="w-full border border-slate-300 rounded-lg p-2">
+                                    <option value="mp3">MP3 (最常用)</option>
+                                    <option value="wav">WAV (无损)</option>
+                                    <option value="flac">FLAC (无损压缩)</option>
+                                    <option value="ogg">OGG (开源格式)</option>
+                                    <option value="aac">AAC (高品质)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-slate-600 mb-1">音质/比特率</label>
+                                <select id="bitrate" class="w-full border border-slate-300 rounded-lg p-2">
+                                    <option value="64k">低质量 (64kbps)</option>
+                                    <option value="128k" selected>标准质量 (128kbps)</option>
+                                    <option value="192k">高质量 (192kbps)</option>
+                                    <option value="320k">无损质量 (320kbps)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-slate-600 mb-1">采样率</label>
+                                <select id="samplerate" class="w-full border border-slate-300 rounded-lg p-2">
+                                    <option value="22050">22.05 kHz (低)</option>
+                                    <option value="44100" selected>44.1 kHz (CD质量)</option>
+                                    <option value="48000">48 kHz (专业)</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 高级选项 -->
+                            <div>
+                                <button id="advancedOptionsBtn" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                                    <i class="fa fa-cog mr-1"></i> 高级选项
+                                </button>
+                                <div id="advancedOptions" class="hidden mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">开始时间 (秒)</label>
+                                            <input type="number" id="startTime" placeholder="0" min="0" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">结束时间 (秒)</label>
+                                            <input type="number" id="endTime" placeholder="留空为完整" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label class="flex items-center text-xs text-slate-600">
+                                            <input type="checkbox" id="mergeFiles" class="mr-2">
+                                            合并所有文件 (仅输出一个文件)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-3">
+                                <button id="convertBtn" class="flex-1 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    开始转换
+                                </button>
+                                <button id="clearBtn" class="flex-1 bg-slate-600 text-white px-6 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                                    清空列表
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-bold mb-3 text-slate-700">文件列表</h3>
+                        <div id="fileList" class="border border-slate-200 rounded-lg p-3 max-h-[300px] overflow-y-auto bg-slate-50">
+                            <p class="text-slate-500 text-center py-4">暂无文件</p>
+                        </div>
+                        
+                        <!-- 音频预览 -->
+                        <div id="audioPreview" class="hidden mt-4 border border-slate-200 rounded-lg p-3 bg-slate-50">
+                            <h4 class="font-medium text-sm mb-2">音频预览</h4>
+                            <audio id="previewPlayer" controls class="w-full"></audio>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 转换结果 -->
+            <div id="resultArea" class="hidden mb-6">
+                <h3 class="font-bold mb-3 text-slate-700">转换结果</h3>
+                <div id="resultList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6"></div>
+                
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <button id="downloadAllBtn" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fa fa-download mr-2"></i>下载全部
+                    </button>
+                    <button id="convertAnotherBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        转换其他音频
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-4 text-center text-sm">
+        <p>© 2025 在线工具集 - 所有操作均在本地完成，不会上传您的音频文件</p>
+    </footer>
+
+    <script>
+        // 初始化FFmpeg
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ 
+            log: true,
+            corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+        });
+        
+        // DOM元素
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const loadingState = document.getElementById('loadingState');
+        const loadingText = document.getElementById('loadingText');
+        const convertSettings = document.getElementById('convertSettings');
+        const outputFormat = document.getElementById('outputFormat');
+        const bitrate = document.getElementById('bitrate');
+        const samplerate = document.getElementById('samplerate');
+        const advancedOptionsBtn = document.getElementById('advancedOptionsBtn');
+        const advancedOptions = document.getElementById('advancedOptions');
+        const startTime = document.getElementById('startTime');
+        const endTime = document.getElementById('endTime');
+        const mergeFiles = document.getElementById('mergeFiles');
+        const convertBtn = document.getElementById('convertBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const fileList = document.getElementById('fileList');
+        const audioPreview = document.getElementById('audioPreview');
+        const previewPlayer = document.getElementById('previewPlayer');
+        const resultArea = document.getElementById('resultArea');
+        const resultList = document.getElementById('resultList');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const convertAnotherBtn = document.getElementById('convertAnotherBtn');
+        
+        // 全局变量
+        let files = [];
+        let convertedBlobs = [];
+        let isFFmpegLoaded = false;
+
+        // 初始化
+        advancedOptionsBtn.addEventListener('click', () => {
+            advancedOptions.classList.toggle('hidden');
+        });
+
+        // 加载FFmpeg
+        async function loadFFmpeg() {
+            if (isFFmpegLoaded) return true;
+            
+            loadingState.classList.remove('hidden');
+            loadingText.textContent = '正在加载音频处理引擎 (约30MB)...';
+            
+            try {
+                await ffmpeg.load();
+                isFFmpegLoaded = true;
+                loadingState.classList.add('hidden');
+                return true;
+            } catch (err) {
+                console.error('FFmpeg加载失败:', err);
+                loadingText.textContent = '加载失败，请刷新页面重试';
+                return false;
+            }
+        }
+
+        // 拖拽功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('active');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('active');
+        }
+
+        // 处理文件上传
+        dropArea.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles, false);
+
+        async function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const droppedFiles = dt.files;
+            await handleFileList(droppedFiles);
+        }
+
+        async function handleFiles() {
+            await handleFileList(this.files);
+        }
+
+        async function handleFileList(fileList) {
+            // 加载FFmpeg
+            const loaded = await loadFFmpeg();
+            if (!loaded) return;
+            
+            // 过滤音频文件
+            const audioFiles = Array.from(fileList).filter(file => file.type.startsWith('audio/'));
+            
+            if (audioFiles.length > 0) {
+                files = [...files, ...audioFiles];
+                updateFileList();
+                convertSettings.classList.remove('hidden');
+                resultArea.classList.add('hidden');
+                
+                // 预览第一个文件
+                if (audioPreview.classList.contains('hidden')) {
+                    previewPlayer.src = URL.createObjectURL(audioFiles[0]);
+                    audioPreview.classList.remove('hidden');
+                }
+            }
+        }
+
+        // 更新文件列表
+        function updateFileList() {
+            if (files.length === 0) {
+                fileList.innerHTML = '<p class="text-slate-500 text-center py-4">暂无文件</p>';
+                convertSettings.classList.add('hidden');
+                audioPreview.classList.add('hidden');
+                return;
+            }
+            
+            fileList.innerHTML = '';
+            files.forEach((file, index) => {
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                const fileType = file.type.split('/')[1].toUpperCase();
+                
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex justify-between items-center py-2 border-b border-slate-200 last:border-0';
+                fileItem.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fa fa-file-audio-o text-purple-500 mr-2"></i>
+                        <div>
+                            <p class="font-medium">${file.name}</p>
+                            <p class="text-xs text-slate-500">${fileSize} MB · ${fileType}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="previewFile(${index})" class="text-blue-500 hover:text-blue-700">
+                            <i class="fa fa-play"></i>
+                        </button>
+                        <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        // 预览文件
+        window.previewFile = function(index) {
+            const file = files[index];
+            previewPlayer.src = URL.createObjectURL(file);
+            audioPreview.classList.remove('hidden');
+            previewPlayer.play().catch(err => console.log('自动播放被阻止'));
+        };
+
+        // 移除文件
+        window.removeFile = function(index) {
+            files.splice(index, 1);
+            updateFileList();
+            
+            // 如果还有文件，预览第一个
+            if (files.length > 0) {
+                previewFile(0);
+            }
+        };
+
+        // 清空列表
+        clearBtn.addEventListener('click', () => {
+            files = [];
+            convertedBlobs = [];
+            updateFileList();
+            resultArea.classList.add('hidden');
+        });
+
+        // 转换音频
+        convertBtn.addEventListener('click', async () => {
+            if (files.length === 0 || !isFFmpegLoaded) return;
+            
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>转换中...';
+            
+            convertedBlobs = [];
+            resultList.innerHTML = '';
+            
+            try {
+                if (mergeFiles.checked && files.length > 1) {
+                    // 合并文件
+                    await mergeAndConvertFiles();
+                } else {
+                    // 逐个转换文件
+                    for (let i = 0; i < files.length; i++) {
+                        await convertAudioFile(files[i], i);
+                    }
+                }
+                
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '开始转换';
+                convertSettings.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+            } catch (err) {
+                console.error('转换失败:', err);
+                alert('转换失败: ' + err.message);
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '开始转换';
+            }
+        });
+
+        // 转换单个音频文件
+        async function convertAudioFile(file, index) {
+            // 文件名处理
+            const inputFileName = `input_${index}.${file.name.split('.').pop()}`;
+            const outputFormatVal = outputFormat.value;
+            const outputFileName = `output_${index}.${outputFormatVal}`;
+            
+            // 加载文件到FFmpeg
+            ffmpeg.FS('writeFile', inputFileName, await fetchFile(file));
+            
+            // 构建FFmpeg命令
+            const bitrateVal = bitrate.value;
+            const samplerateVal = samplerate.value;
+            const start = startTime.value ? `-ss ${startTime.value}` : '';
+            const duration = endTime.value ? `-to ${endTime.value}` : '';
+            
+            // 不同格式的编码参数
+            let codec = '';
+            let audioFilters = '';
+            
+            switch (outputFormatVal) {
+                case 'mp3':
+                    codec = '-c:a libmp3lame';
+                    break;
+                case 'wav':
+                    codec = '-c:a pcm_s16le';
+                    break;
+                case 'flac':
+                    codec = '-c:a flac';
+                    break;
+                case 'ogg':
+                    codec = '-c:a libvorbis';
+                    break;
+                case 'aac':
+                    codec = '-c:a aac';
+                    break;
+            }
+            
+            // 构建完整命令
+            const command = [
+                '-i', inputFileName,
+                ...(start ? [start] : []),
+                ...(duration ? [duration] : []),
+                '-ar', samplerateVal,
+                '-b:a', bitrateVal,
+                '-filter:a', `aresample=resampler=soxr`,
+                codec,
+                '-y', // 覆盖输出文件
+                outputFileName
+            ].filter(Boolean);
+            
+            // 执行转换
+            await ffmpeg.run(...command);
+            
+            // 读取转换后的文件
+            const data = ffmpeg.FS('readFile', outputFileName);
+            const blob = new Blob([data.buffer], { type: `audio/${outputFormatVal}` });
+            
+            // 保存结果
+            convertedBlobs.push({
+                blob: blob,
+                originalFile: file,
+                format: outputFormatVal,
+                index: index
+            });
+            
+            // 创建预览项
+            createResultItem(blob, file, index, outputFormatVal);
+            
+            // 清理
+            ffmpeg.FS('unlink', inputFileName);
+            ffmpeg.FS('unlink', outputFileName);
+        }
+
+        // 合并并转换文件
+        async function mergeAndConvertFiles() {
+            // 首先将所有文件转换为临时WAV文件
+            const tempFiles = [];
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const inputFileName = `input_${i}.${file.name.split('.').pop()}`;
+                const tempFileName = `temp_${i}.wav`;
+                
+                // 加载文件
+                ffmpeg.FS('writeFile', inputFileName, await fetchFile(file));
+                
+                // 转换为WAV（便于合并）
+                await ffmpeg.run(
+                    '-i', inputFileName,
+                    '-c:a', 'pcm_s16le',
+                    '-y',
+                    tempFileName
+                );
+                
+                tempFiles.push(tempFileName);
+                ffmpeg.FS('unlink', inputFileName);
+            }
+            
+            // 创建文件列表
+            const listFileName = 'filelist.txt';
+            const fileListContent = tempFiles.map(f => `file '${f}'`).join('\n');
+            ffmpeg.FS('writeFile', listFileName, new TextEncoder().encode(fileListContent));
+            
+            // 合并并转换
+            const outputFormatVal = outputFormat.value;
+            const outputFileName = `merged.${outputFormatVal}`;
+            const bitrateVal = bitrate.value;
+            const samplerateVal = samplerate.value;
+            
+            // 构建合并命令
+            await ffmpeg.run(
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', listFileName,
+                '-ar', samplerateVal,
+                '-b:a', bitrateVal,
+                '-c:a', outputFormatVal === 'mp3' ? 'libmp3lame' : outputFormatVal === 'ogg' ? 'libvorbis' : 'copy',
+                '-y',
+                outputFileName
+            );
+            
+            // 读取合并后的文件
+            const data = ffmpeg.FS('readFile', outputFileName);
+            const blob = new Blob([data.buffer], { type: `audio/${outputFormatVal}` });
+            
+            // 保存结果
+            convertedBlobs.push({
+                blob: blob,
+                originalFile: { name: 'merged_audio' },
+                format: outputFormatVal,
+                index: 0
+            });
+            
+            // 创建预览项
+            createResultItem(blob, { name: 'merged_audio' }, 0, outputFormatVal);
+            
+            // 清理临时文件
+            tempFiles.forEach(file => ffmpeg.FS('unlink', file));
+            ffmpeg.FS('unlink', listFileName);
+            ffmpeg.FS('unlink', outputFileName);
+        }
+
+        // 创建结果项
+        function createResultItem(blob, file, index, format) {
+            const url = URL.createObjectURL(blob);
+            const fileSize = (blob.size / 1024 / 1024).toFixed(2);
+            
+            // 文件名
+            const baseName = file.name.replace(/\.\w+$/, '');
+            const fileName = `${baseName}.${format}`;
+            
+            const resultItem = document.createElement('div');
+            resultItem.className = 'border border-slate-200 rounded-lg overflow-hidden bg-slate-50';
+            resultItem.innerHTML = `
+                <div class="p-3">
+                    <div class="flex items-center mb-2">
+                        <i class="fa fa-file-audio-o text-purple-500 mr-2"></i>
+                        <p class="font-medium text-sm truncate">${fileName}</p>
+                    </div>
+                    <audio controls class="w-full mb-3">
+                        <source src="${url}" type="audio/${format}">
+                    </audio>
+                    <p class="text-xs text-slate-500 mb-3">${fileSize} MB · ${format.toUpperCase()} · ${bitrate.value}</p>
+                    <button onclick="downloadAudio(${index})" class="w-full bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition-colors text-sm">
+                        <i class="fa fa-download mr-1"></i>下载
+                    </button>
+                </div>
+            `;
+            
+            resultList.appendChild(resultItem);
+        }
+
+        // 下载音频文件
+        window.downloadAudio = function(index) {
+            const item = convertedBlobs[index];
+            if (!item) return;
+            
+            const baseName = item.originalFile.name.replace(/\.\w+$/, '');
+            const fileName = `${baseName}.${item.format}`;
+            
+            const url = URL.createObjectURL(item.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // 下载全部文件
+        downloadAllBtn.addEventListener('click', () => {
+            if (convertedBlobs.length === 1) {
+                downloadAudio(0);
+            } else if (convertedBlobs.length > 1) {
+                alert('批量下载需要引入JSZip库，已开始逐个下载文件');
+                convertedBlobs.forEach((_, index) => downloadAudio(index));
+            }
+        });
+
+        // 转换其他音频
+        convertAnotherBtn.addEventListener('click', () => {
+            resultArea.classList.add('hidden');
+            convertSettings.classList.remove('hidden');
+            fileInput.value = '';
+        });
+    </script>
+</body>
+</html>
