@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>进制转换工具 - 在线2/8/10/16进制转换</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <style>
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            }
+            .base-card {
+                transition: all 0.2s ease;
+            }
+            .base-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header class="gradient-bg text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-exchange text-xl"></i>
+                <h1 class="text-xl font-bold">进制转换工具</h1>
+            </div>
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                返回工具列表
+            </a>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">进制转换</h2>
+            <p class="text-slate-600 mb-6">支持二进制、八进制、十进制、十六进制互转，包含位运算和负数/小数转换功能</p>
+            
+            <!-- 快速转换卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <!-- 二进制卡片 -->
+                <div class="base-card bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <h3 class="font-bold text-blue-800 mb-2 flex items-center">
+                        <i class="fa fa-code mr-2"></i>二进制
+                    </h3>
+                    <input type="text" id="binaryInput" placeholder="输入二进制数" 
+                        class="w-full border border-blue-200 rounded-lg p-2 mb-2 font-mono text-sm" 
+                        oninput="convertFromBase('binary')" 
+                        pattern="[01.+-]+">
+                    <div class="text-xs text-blue-700">0 和 1 组成，可选小数点和正负号</div>
+                </div>
+                
+                <!-- 八进制卡片 -->
+                <div class="base-card bg-green-50 border border-green-100 rounded-lg p-4">
+                    <h3 class="font-bold text-green-800 mb-2 flex items-center">
+                        <i class="fa fa-list-ol mr-2"></i>八进制
+                    </h3>
+                    <input type="text" id="octalInput" placeholder="输入八进制数" 
+                        class="w-full border border-green-200 rounded-lg p-2 mb-2 font-mono text-sm" 
+                        oninput="convertFromBase('octal')"
+                        pattern="[0-7.+-]+">
+                    <div class="text-xs text-green-700">0-7 组成，可选小数点和正负号</div>
+                </div>
+                
+                <!-- 十进制卡片 -->
+                <div class="base-card bg-yellow-50 border border-yellow-100 rounded-lg p-4">
+                    <h3 class="font-bold text-yellow-800 mb-2 flex items-center">
+                        <i class="fa fa-hashtag mr-2"></i>十进制
+                    </h3>
+                    <input type="text" id="decimalInput" placeholder="输入十进制数" 
+                        class="w-full border border-yellow-200 rounded-lg p-2 mb-2 font-mono text-sm" 
+                        oninput="convertFromBase('decimal')"
+                        pattern="[0-9.+-]+">
+                    <div class="text-xs text-yellow-700">0-9 组成，可选小数点和正负号</div>
+                </div>
+                
+                <!-- 十六进制卡片 -->
+                <div class="base-card bg-purple-50 border border-purple-100 rounded-lg p-4">
+                    <h3 class="font-bold text-purple-800 mb-2 flex items-center">
+                        <i class="fa fa-keyboard-o mr-2"></i>十六进制
+                    </h3>
+                    <input type="text" id="hexInput" placeholder="输入十六进制数" 
+                        class="w-full border border-purple-200 rounded-lg p-2 mb-2 font-mono text-sm" 
+                        oninput="convertFromBase('hex')"
+                        pattern="[0-9a-fA-F.+-]+">
+                    <div class="text-xs text-purple-700">0-9, A-F 组成，可选小数点和正负号</div>
+                </div>
+            </div>
+            
+            <!-- 转换结果区域 -->
+            <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-8">
+                <h3 class="font-bold text-slate-800 mb-3 flex items-center">
+                    <i class="fa fa-calculator mr-2 text-slate-600"></i>转换结果
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- 二进制结果 -->
+                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">二进制 (Binary)</div>
+                        <div id="binaryResult" class="font-mono text-base font-bold text-blue-600">0</div>
+                        <button onclick="copyResult('binaryResult')" class="mt-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                    
+                    <!-- 八进制结果 -->
+                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">八进制 (Octal)</div>
+                        <div id="octalResult" class="font-mono text-base font-bold text-green-600">0</div>
+                        <button onclick="copyResult('octalResult')" class="mt-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                    
+                    <!-- 十进制结果 -->
+                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">十进制 (Decimal)</div>
+                        <div id="decimalResult" class="font-mono text-base font-bold text-yellow-600">0</div>
+                        <button onclick="copyResult('decimalResult')" class="mt-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                    
+                    <!-- 十六进制结果 -->
+                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                        <div class="text-xs text-slate-500 mb-1">十六进制 (Hexadecimal)</div>
+                        <div id="hexResult" class="font-mono text-base font-bold text-purple-600">0</div>
+                        <button onclick="copyResult('hexResult')" class="mt-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded hover:bg-purple-200">
+                            <i class="fa fa-copy mr-1"></i>复制
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 额外信息 -->
+                <div class="mt-4 bg-white rounded-lg p-3 border border-slate-200">
+                    <div class="text-xs text-slate-500 mb-1">详细信息</div>
+                    <div id="detailInfo" class="text-sm text-slate-700">
+                        输入数值后将显示详细的转换信息
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 位运算区域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- 位运算计算器 -->
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center">
+                        <i class="fa fa-cogs mr-2 text-orange-500"></i>位运算工具
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">数值 A (十进制)</label>
+                                <input type="number" id="bitwiseA" placeholder="输入整数" class="w-full border border-slate-300 rounded-lg p-2">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">数值 B (十进制)</label>
+                                <input type="number" id="bitwiseB" placeholder="输入整数" class="w-full border border-slate-300 rounded-lg p-2">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <button onclick="bitwiseOperation('and')" class="bg-orange-100 text-orange-800 px-2 py-2 rounded text-sm hover:bg-orange-200">
+                                按位与 (&)
+                            </button>
+                            <button onclick="bitwiseOperation('or')" class="bg-orange-100 text-orange-800 px-2 py-2 rounded text-sm hover:bg-orange-200">
+                                按位或 (|)
+                            </button>
+                            <button onclick="bitwiseOperation('xor')" class="bg-orange-100 text-orange-800 px-2 py-2 rounded text-sm hover:bg-orange-200">
+                                按位异或 (^)
+                            </button>
+                            <button onclick="bitwiseOperation('not')" class="bg-orange-100 text-orange-800 px-2 py-2 rounded text-sm hover:bg-orange-200">
+                                按位非 (~)
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <button onclick="bitwiseOperation('left')" class="bg-slate-100 text-slate-800 px-2 py-2 rounded text-sm hover:bg-slate-200">
+                                左移 (<<)
+                            </button>
+                            <button onclick="bitwiseOperation('right')" class="bg-slate-100 text-slate-800 px-2 py-2 rounded text-sm hover:bg-slate-200">
+                                右移 (>>)
+                            </button>
+                            <button onclick="bitwiseOperation('unsignedRight')" class="bg-slate-100 text-slate-800 px-2 py-2 rounded text-sm hover:bg-slate-200">
+                                无符号右移 (>>>)
+                            </button>
+                            <button onclick="clearBitwise()" class="bg-red-100 text-red-800 px-2 py-2 rounded text-sm hover:bg-red-200">
+                                清空
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <div class="text-xs text-slate-500 mb-1">运算结果</div>
+                            <div id="bitwiseResult" class="font-mono text-base text-slate-800">
+                                请输入数值并选择运算类型
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 批量转换 -->
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center">
+                        <i class="fa fa-list mr-2 text-green-500"></i>批量转换
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">源进制</label>
+                            <select id="batchSourceBase" class="w-full border border-slate-300 rounded-lg p-2">
+                                <option value="decimal">十进制</option>
+                                <option value="binary">二进制</option>
+                                <option value="octal">八进制</option>
+                                <option value="hex">十六进制</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">目标进制</label>
+                            <select id="batchTargetBase" class="w-full border border-slate-300 rounded-lg p-2">
+                                <option value="binary">二进制</option>
+                                <option value="octal">八进制</option>
+                                <option value="decimal">十进制</option>
+                                <option value="hex">十六进制</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">批量输入 (每行一个数值)</label>
+                                <textarea id="batchInput" placeholder="例如:
+100
+255
+-42
+3.14"
+                                    class="w-full h-[100px] p-2 border border-slate-300 rounded-lg resize-y font-mono text-sm"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">批量结果</label>
+                                <textarea id="batchOutput" readonly
+                                    class="w-full h-[100px] p-2 border border-slate-300 rounded-lg resize-y font-mono text-sm bg-white"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="batchConvert()" class="flex-1 bg-green-600 text-white px-2 py-2 rounded text-sm hover:bg-green-700">
+                                <i class="fa fa-refresh mr-1"></i>批量转换
+                            </button>
+                            <button onclick="copyResult('batchOutput')" class="bg-slate-100 text-slate-800 px-2 py-2 rounded text-sm hover:bg-slate-200">
+                                <i class="fa fa-copy mr-1"></i>复制结果
+                            </button>
+                            <button onclick="clearBatch()" class="bg-red-100 text-red-800 px-2 py-2 rounded text-sm hover:bg-red-200">
+                                <i class="fa fa-times mr-1"></i>清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 转换说明 -->
+            <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <h3 class="font-bold text-blue-800 mb-2 flex items-center">
+                    <i class="fa fa-info-circle mr-2"></i>使用说明
+                </h3>
+                <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                    <li>支持整数和小数转换，正数和负数转换</li>
+                    <li>二进制：0-1，八进制：0-7，十进制：0-9，十六进制：0-9、A-F（大小写均可）</li>
+                    <li>位运算仅支持整数操作，不支持小数</li>
+                    <li>小数转换精度默认保留8位小数，超出部分会被截断</li>
+                    <li>所有转换均在本地完成，不会上传任何数据</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-4 text-center text-sm">
+        <p>© 2025 在线工具集 - 所有操作均在本地完成，不会上传您的数据</p>
+    </footer>
+
+    <script>
+        // 精度设置
+        const PRECISION = 8; // 小数精度
+        
+        // 从指定进制转换为其他进制
+        function convertFromBase(baseType) {
+            const inputElements = {
+                binary: document.getElementById('binaryInput'),
+                octal: document.getElementById('octalInput'),
+                decimal: document.getElementById('decimalInput'),
+                hex: document.getElementById('hexInput')
+            };
+            
+            // 获取输入值
+            let inputValue = inputElements[baseType].value.trim();
+            if (!inputValue) {
+                // 清空所有输入和结果
+                for (const key in inputElements) {
+                    inputElements[key].value = '';
+                }
+                document.getElementById('binaryResult').textContent = '0';
+                document.getElementById('octalResult').textContent = '0';
+                document.getElementById('decimalResult').textContent = '0';
+                document.getElementById('hexResult').textContent = '0';
+                document.getElementById('detailInfo').textContent = '输入数值后将显示详细的转换信息';
+                return;
+            }
+            
+            // 标记正负号
+            let isNegative = false;
+            if (inputValue.startsWith('-')) {
+                isNegative = true;
+                inputValue = inputValue.substring(1);
+            } else if (inputValue.startsWith('+')) {
+                inputValue = inputValue.substring(1);
+            }
+            
+            // 检查是否包含小数
+            const hasDecimal = inputValue.includes('.');
+            let integerPart = inputValue;
+            let decimalPart = '';
+            
+            if (hasDecimal) {
+                const parts = inputValue.split('.');
+                integerPart = parts[0] || '0';
+                decimalPart = parts[1] || '';
+            }
+            
+            // 根据源进制转换为十进制
+            let decimalValue;
+            try {
+                switch (baseType) {
+                    case 'binary':
+                        // 二进制转十进制
+                        decimalValue = binaryToDecimal(integerPart, decimalPart);
+                        break;
+                    case 'octal':
+                        // 八进制转十进制
+                        decimalValue = octalToDecimal(integerPart, decimalPart);
+                        break;
+                    case 'decimal':
+                        // 十进制直接使用
+                        decimalValue = parseFloat(inputValue);
+                        if (isNaN(decimalValue)) throw new Error('无效的十进制数');
+                        break;
+                    case 'hex':
+                        // 十六进制转十进制
+                        decimalValue = hexToDecimal(integerPart, decimalPart);
+                        break;
+                }
+                
+                // 应用正负号
+                if (isNegative) {
+                    decimalValue = -decimalValue;
+                }
+                
+                // 检查是否有效
+                if (isNaN(decimalValue)) {
+                    throw new Error('无效的数值格式');
+                }
+                
+                // 转换为其他进制
+                const binary = decimalToBase(Math.abs(decimalValue), 2, hasDecimal);
+                const octal = decimalToBase(Math.abs(decimalValue), 8, hasDecimal);
+                const hex = decimalToBase(Math.abs(decimalValue), 16, hasDecimal);
+                
+                // 应用正负号到结果
+                const binaryResult = isNegative ? '-' + binary : binary;
+                const octalResult = isNegative ? '-' + octal : octal;
+                const decimalResult = decimalValue.toString();
+                const hexResult = isNegative ? '-' + hex.toUpperCase() : hex.toUpperCase();
+                
+                // 更新结果显示
+                document.getElementById('binaryResult').textContent = binaryResult;
+                document.getElementById('octalResult').textContent = octalResult;
+                document.getElementById('decimalResult').textContent = decimalResult;
+                document.getElementById('hexResult').textContent = hexResult;
+                
+                // 更新输入框（同步）
+                if (baseType !== 'binary') inputElements.binary.value = binaryResult;
+                if (baseType !== 'octal') inputElements.octal.value = octalResult;
+                if (baseType !== 'decimal') inputElements.decimal.value = decimalResult;
+                if (baseType !== 'hex') inputElements.hex.value = hexResult;
+                
+                // 更新详细信息
+                updateDetailInfo(decimalValue, binaryResult, octalResult, hexResult);
+                
+            } catch (error) {
+                document.getElementById('detailInfo').textContent = `转换错误: ${error.message}`;
+                document.getElementById('binaryResult').textContent = '错误';
+                document.getElementById('octalResult').textContent = '错误';
+                document.getElementById('decimalResult').textContent = '错误';
+                document.getElementById('hexResult').textContent = '错误';
+            }
+        }
+        
+        // 二进制转十进制
+        function binaryToDecimal(integerPart, decimalPart) {
+            // 验证二进制整数部分
+            if (!/^[01]*$/.test(integerPart)) throw new Error('二进制数只能包含0和1');
+            
+            // 验证二进制小数部分
+            if (decimalPart && !/^[01]*$/.test(decimalPart)) throw new Error('二进制数只能包含0和1');
+            
+            // 整数部分转换
+            let integerValue = parseInt(integerPart, 2) || 0;
+            
+            // 小数部分转换
+            let decimalValue = 0;
+            for (let i = 0; i < Math.min(decimalPart.length, PRECISION); i++) {
+                decimalValue += parseInt(decimalPart[i]) * Math.pow(2, -(i + 1));
+            }
+            
+            return integerValue + decimalValue;
+        }
+        
+        // 八进制转十进制
+        function octalToDecimal(integerPart, decimalPart) {
+            // 验证八进制整数部分
+            if (!/^[0-7]*$/.test(integerPart)) throw new Error('八进制数只能包含0-7');
+            
+            // 验证八进制小数部分
+            if (decimalPart && !/^[0-7]*$/.test(decimalPart)) throw new Error('八进制数只能包含0-7');
+            
+            // 整数部分转换
+            let integerValue = parseInt(integerPart, 8) || 0;
+            
+            // 小数部分转换
+            let decimalValue = 0;
+            for (let i = 0; i < Math.min(decimalPart.length, PRECISION); i++) {
+                decimalValue += parseInt(decimalPart[i]) * Math.pow(8, -(i + 1));
+            }
+            
+            return integerValue + decimalValue;
+        }
+        
+        // 十六进制转十进制
+        function hexToDecimal(integerPart, decimalPart) {
+            // 验证十六进制整数部分
+            if (!/^[0-9a-fA-F]*$/.test(integerPart)) throw new Error('十六进制数只能包含0-9和A-F');
+            
+            // 验证十六进制小数部分
+            if (decimalPart && !/^[0-9a-fA-F]*$/.test(decimalPart)) throw new Error('十六进制数只能包含0-9和A-F');
+            
+            // 整数部分转换
+            let integerValue = parseInt(integerPart, 16) || 0;
+            
+            // 小数部分转换
+            let decimalValue = 0;
+            for (let i = 0; i < Math.min(decimalPart.length, PRECISION); i++) {
+                decimalValue += parseInt(decimalPart[i], 16) * Math.pow(16, -(i + 1));
+            }
+            
+            return integerValue + decimalValue;
+        }
+        
+        // 十进制转指定进制
+        function decimalToBase(decimalValue, base, hasDecimal) {
+            if (decimalValue === 0) return '0';
+            
+            // 处理整数部分
+            let integerPart = Math.floor(decimalValue);
+            let integerResult = '';
+            
+            if (integerPart === 0) {
+                integerResult = '0';
+            } else {
+                while (integerPart > 0) {
+                    const remainder = integerPart % base;
+                    // 转换为字符（16进制处理A-F）
+                    const char = remainder >= 10 ? String.fromCharCode(87 + remainder) : remainder.toString();
+                    integerResult = char + integerResult;
+                    integerPart = Math.floor(integerPart / base);
+                }
+            }
+            
+            // 处理小数部分
+            let decimalResult = '';
+            if (hasDecimal) {
+                let decimalPart = decimalValue - Math.floor(decimalValue);
+                let precisionCount = 0;
+                
+                while (decimalPart > 0 && precisionCount < PRECISION) {
+                    decimalPart *= base;
+                    const integerDigit = Math.floor(decimalPart);
+                    const char = integerDigit >= 10 ? String.fromCharCode(87 + integerDigit) : integerDigit.toString();
+                    decimalResult += char;
+                    decimalPart -= integerDigit;
+                    precisionCount++;
+                }
+            }
+            
+            return decimalResult ? `${integerResult}.${decimalResult}` : integerResult;
+        }
+        
+        // 更新详细信息
+        function updateDetailInfo(decimalValue, binary, octal, hex) {
+            const isInteger = Number.isInteger(decimalValue);
+            const absValue = Math.abs(decimalValue);
+            
+            let detail = `数值: ${decimalValue}`;
+            detail += `\n二进制: ${binary} (基数 2)`;
+            detail += `\n八进制: ${octal} (基数 8)`;
+            detail += `\n十进制: ${decimalValue} (基数 10)`;
+            detail += `\n十六进制: ${hex} (基数 16)`;
+            
+            if (isInteger && absValue <= Number.MAX_SAFE_INTEGER) {
+                detail += `\n位数: 二进制共 ${binary.replace('-', '').replace('.', '').length} 位`;
+                detail += `\n是否为2的幂: ${isPowerOfTwo(absValue) ? '是' : '否'}`;
+            }
+            
+            document.getElementById('detailInfo').textContent = detail;
+        }
+        
+        // 检查是否为2的幂
+        function isPowerOfTwo(n) {
+            return n > 0 && (n & (n - 1)) === 0;
+        }
+        
+        // 复制结果
+        function copyResult(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent.trim();
+            
+            if (!text || text === '0' || text === '错误' || text === '请输入数值并选择运算类型') {
+                alert('没有可复制的内容');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = element.textContent;
+                element.textContent = '已复制!';
+                
+                setTimeout(() => {
+                    element.textContent = originalText;
+                }, 1500);
+            }).catch(err => {
+                alert('复制失败: ' + err);
+            });
+        }
+        
+        // 位运算操作
+        function bitwiseOperation(operation) {
+            const a = parseInt(document.getElementById('bitwiseA').value);
+            const b = parseInt(document.getElementById('bitwiseB').value);
+            
+            if (isNaN(a) || (operation !== 'not' && isNaN(b))) {
+                document.getElementById('bitwiseResult').textContent = '请输入有效的整数数值';
+                return;
+            }
+            
+            let result, binaryA, binaryB, binaryResult;
+            let explanation = '';
+            
+            switch (operation) {
+                case 'and':
+                    result = a & b;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryB = b.toString(2).padStart(8, '0');
+                    binaryResult = result.toString(2).padStart(8, '0');
+                    explanation = `${a} & ${b} = ${result}\n二进制: ${binaryA} & ${binaryB} = ${binaryResult}`;
+                    break;
+                case 'or':
+                    result = a | b;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryB = b.toString(2).padStart(8, '0');
+                    binaryResult = result.toString(2).padStart(8, '0');
+                    explanation = `${a} | ${b} = ${result}\n二进制: ${binaryA} | ${binaryB} = ${binaryResult}`;
+                    break;
+                case 'xor':
+                    result = a ^ b;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryB = b.toString(2).padStart(8, '0');
+                    binaryResult = result.toString(2).padStart(8, '0');
+                    explanation = `${a} ^ ${b} = ${result}\n二进制: ${binaryA} ^ ${binaryB} = ${binaryResult}`;
+                    break;
+                case 'not':
+                    result = ~a;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryResult = (result >>> 0).toString(2).padStart(32, '0').slice(-8);
+                    explanation = `~${a} = ${result}\n二进制: ~${binaryA} = ${binaryResult} (按位取反)`;
+                    break;
+                case 'left':
+                    result = a << b;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryResult = result.toString(2).padStart(8 + b, '0').slice(-8);
+                    explanation = `${a} << ${b} = ${result}\n二进制: ${binaryA} 左移 ${b} 位 = ${binaryResult}`;
+                    break;
+                case 'right':
+                    result = a >> b;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryResult = result.toString(2).padStart(8, '0');
+                    explanation = `${a} >> ${b} = ${result}\n二进制: ${binaryA} 右移 ${b} 位 = ${binaryResult} (带符号)`;
+                    break;
+                case 'unsignedRight':
+                    result = a >>> b;
+                    binaryA = a.toString(2).padStart(8, '0');
+                    binaryResult = result.toString(2).padStart(8, '0');
+                    explanation = `${a} >>> ${b} = ${result}\n二进制: ${binaryA} 右移 ${b} 位 = ${binaryResult} (无符号)`;
+                    break;
+            }
+            
+            document.getElementById('bitwiseResult').textContent = explanation;
+        }
+        
+        // 清空位运算输入
+        function clearBitwise() {
+            document.getElementById('bitwiseA').value = '';
+            document.getElementById('bitwiseB').value = '';
+            document.getElementById('bitwiseResult').textContent = '请输入数值并选择运算类型';
+        }
+        
+        // 批量转换
+        function batchConvert() {
+            const sourceBase = document.getElementById('batchSourceBase').value;
+            const targetBase = document.getElementById('batchTargetBase').value;
+            const input = document.getElementById('batchInput').value.trim();
+            
+            if (!input) {
+                document.getElementById('batchOutput').value = '';
+                alert('请输入需要转换的数值');
+                return;
+            }
+            
+            const lines = input.split('\n').filter(line => line.trim());
+            let output = '';
+            
+            lines.forEach(line => {
+                const originalLine = line.trim();
+                try {
+                    // 标记正负号
+                    let isNegative = false;
+                    let value = originalLine;
+                    
+                    if (value.startsWith('-')) {
+                        isNegative = true;
+                        value = value.substring(1);
+                    } else if (value.startsWith('+')) {
+                        value = value.substring(1);
+                    }
+                    
+                    // 转换为十进制
+                    let decimalValue;
+                    switch (sourceBase) {
+                        case 'binary':
+                            const binaryParts = value.split('.');
+                            decimalValue = binaryToDecimal(binaryParts[0] || '0', binaryParts[1] || '');
+                            break;
+                        case 'octal':
+                            const octalParts = value.split('.');
+                            decimalValue = octalToDecimal(octalParts[0] || '0', octalParts[1] || '');
+                            break;
+                        case 'decimal':
+                            decimalValue = parseFloat(value);
+                            if (isNaN(decimalValue)) throw new Error('无效的十进制数');
+                            break;
+                        case 'hex':
+                            const hexParts = value.split('.');
+                            decimalValue = hexToDecimal(hexParts[0] || '0', hexParts[1] || '');
+                            break;
+                    }
+                    
+                    // 应用正负号
+                    if (isNegative) {
+                        decimalValue = -decimalValue;
+                    }
+                    
+                    // 转换为目标进制
+                    let targetValue;
+                    const hasDecimal = value.includes('.');
+                    const absValue = Math.abs(decimalValue);
+                    
+                    switch (targetBase) {
+                        case 'binary':
+                            targetValue = decimalToBase(absValue, 2, hasDecimal);
+                            break;
+                        case 'octal':
+                            targetValue = decimalToBase(absValue, 8, hasDecimal);
+                            break;
+                        case 'decimal':
+                            targetValue = decimalValue.toString();
+                            break;
+                        case 'hex':
+                            targetValue = decimalToBase(absValue, 16, hasDecimal).toUpperCase();
+                            break;
+                    }
+                    
+                    // 应用正负号
+                    if (isNegative) {
+                        targetValue = '-' + targetValue;
+                    }
+                    
+                    output += `${originalLine} → ${targetValue}\n`;
+                    
+                } catch (error) {
+                    output += `${originalLine} → 转换错误: ${error.message}\n`;
+                }
+            });
+            
+            document.getElementById('batchOutput').value = output.trim();
+        }
+        
+        // 清空批量转换
+        function clearBatch() {
+            document.getElementById('batchInput').value = '';
+            document.getElementById('batchOutput').value = '';
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置输入框的输入事件防抖
+            const inputElements = [
+                document.getElementById('binaryInput'),
+                document.getElementById('octalInput'),
+                document.getElementById('decimalInput'),
+                document.getElementById('hexInput')
+            ];
+            
+            inputElements.forEach(input => {
+                let timeout;
+                input.addEventListener('input', function() {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        const baseType = input.id.replace('Input', '');
+                        convertFromBase(baseType);
+                    }, 300);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

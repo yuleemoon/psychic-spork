@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能工具箱 - 高效实用的在线工具集合</title>
+    <!-- 引入外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 自定义配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        dark: '#1e293b',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:bg-gradient-to-br hover:from-primary/5 hover:to-secondary/5;
+            }
+            .gradient-text {
+                @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-slate-50 text-dark min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-wrench text-2xl gradient-text"></i>
+                <h1 class="text-xl font-bold">全能工具箱</h1>
+            </div>
+            
+            <!-- 搜索框 -->
+            <div class="relative max-w-md w-full">
+                <input 
+                    type="text" 
+                    id="toolSearch"
+                    placeholder="搜索工具..." 
+                    class="w-full pl-10 pr-4 py-2 rounded-full border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                >
+                <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- 页面介绍 -->
+        <section class="mb-12 text-center">
+            <h2 class="text-[clamp(1.8rem,4vw,2.8rem)] font-bold gradient-text mb-4">高效实用的在线工具集合</h2>
+            <p class="text-slate-600 max-w-2xl mx-auto text-lg">
+                精选20+日常实用工具，涵盖图片处理、格式转换、文本处理等多个类别，
+                无需安装，即开即用，帮助你提升工作效率
+            </p>
+        </section>
+
+        <!-- 工具分类标签 -->
+        <section class="mb-8 overflow-x-auto pb-2">
+            <div class="flex gap-2 min-w-max">
+                <button class="category-btn active px-5 py-2 rounded-full bg-primary text-white font-medium transition-all hover:bg-primary/90" data-category="all">
+                    全部工具
+                </button>
+                <button class="category-btn px-5 py-2 rounded-full bg-slate-200 font-medium transition-all hover:bg-slate-300" data-category="image">
+                    图片处理
+                </button>
+                <button class="category-btn px-5 py-2 rounded-full bg-slate-200 font-medium transition-all hover:bg-slate-300" data-category="format">
+                    格式转换
+                </button>
+                <button class="category-btn px-5 py-2 rounded-full bg-slate-200 font-medium transition-all hover:bg-slate-300" data-category="text">
+                    文本处理
+                </button>
+                <button class="category-btn px-5 py-2 rounded-full bg-slate-200 font-medium transition-all hover:bg-slate-300" data-category="other">
+                    其他工具
+                </button>
+            </div>
+        </section>
+
+        <!-- 工具卡片网格 -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <!-- 图片处理类工具 -->
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="image">
+                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-compress text-2xl text-primary"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">图片压缩</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">无损压缩图片大小，节省存储空间</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="image">
+                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-crop text-2xl text-primary"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">图片裁剪</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">自定义尺寸裁剪图片，适配各种场景</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="image">
+                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-picture-o text-2xl text-primary"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">图片加水印</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">为图片添加文字或图片水印，保护版权</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <!-- 格式转换类工具 -->
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="format">
+                <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-exchange text-2xl text-secondary"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">图片转格式</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">支持JPG、PNG、WebP、GIF等格式互转</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="format">
+                <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-file-audio-o text-2xl text-secondary"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">音频转格式</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">MP3、WAV、FLAC等音频格式相互转换</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="format">
+                <div class="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-file-excel-o text-2xl text-secondary"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">文档转格式</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">Word、Excel、PDF等文档格式转换</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <!-- 文本处理类工具 -->
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="text">
+                <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-font text-2xl text-accent"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">文本去重</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">智能去除文本中的重复内容，保持整洁</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="text">
+                <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-exchange text-2xl text-accent"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">大小写转换</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">快速转换文本大小写，满足不同需求</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <!-- 其他工具 -->
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="other">
+                <div class="w-16 h-16 rounded-full bg-dark/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-clock-o text-2xl text-dark"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">时间戳转换</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">Unix时间戳与标准时间相互转换</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="tool-card card-hover bg-white rounded-2xl shadow-md p-6 border border-slate-100 flex flex-col items-center text-center" data-category="other">
+                <div class="w-16 h-16 rounded-full bg-dark/10 flex items-center justify-center mb-4">
+                    <i class="fa fa-calculator text-2xl text-dark"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">进制转换</h3>
+                <p class="text-slate-600 text-sm mb-4 flex-grow">二进制、八进制、十进制、十六进制转换</p>
+                <a href="#" class="text-primary font-medium hover:text-primary/80 transition-colors flex items-center gap-1">
+                    使用工具 <i class="fa fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <!-- 可继续添加更多工具卡片 -->
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">© 2025 全能工具箱 - 所有工具仅供个人使用</p>
+            <p class="text-slate-400 text-sm">本网站不存储任何用户上传的文件，所有处理均在本地完成</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 交互逻辑 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 分类筛选功能
+            const categoryBtns = document.querySelectorAll('.category-btn');
+            const toolCards = document.querySelectorAll('.tool-card');
+            
+            categoryBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有按钮的激活状态
+                    categoryBtns.forEach(b => {
+                        b.classList.remove('active', 'bg-primary', 'text-white');
+                        b.classList.add('bg-slate-200');
+                    });
+                    
+                    // 添加当前按钮的激活状态
+                    this.classList.add('active', 'bg-primary', 'text-white');
+                    this.classList.remove('bg-slate-200');
+                    
+                    const category = this.getAttribute('data-category');
+                    
+                    // 筛选工具卡片
+                    toolCards.forEach(card => {
+                        if (category === 'all' || card.getAttribute('data-category') === category) {
+                            card.classList.remove('hidden');
+                            // 添加渐入动画
+                            card.style.opacity = '0';
+                            setTimeout(() => {
+                                card.style.opacity = '1';
+                                card.style.transition = 'opacity 0.3s ease';
+                            }, 50);
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // 2. 搜索功能
+            const searchInput = document.getElementById('toolSearch');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                toolCards.forEach(card => {
+                    const toolName = card.querySelector('h3').textContent.toLowerCase();
+                    const toolDesc = card.querySelector('p').textContent.toLowerCase();
+                    
+                    if (toolName.includes(searchTerm) || toolDesc.includes(searchTerm)) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+                
+                // 如果搜索框有内容，重置分类按钮状态
+                if (searchTerm) {
+                    categoryBtns.forEach(b => {
+                        b.classList.remove('active', 'bg-primary', 'text-white');
+                        b.classList.add('bg-slate-200');
+                    });
+                } else {
+                    // 恢复默认选中全部
+                    document.querySelector('[data-category="all"]').classList.add('active', 'bg-primary', 'text-white');
+                    document.querySelector('[data-category="all"]').classList.remove('bg-slate-200');
+                }
+            });
+
+            // 3. 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

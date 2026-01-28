@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大小写转换工具 - 在线文本大小写转换</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <style>
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            }
+            .text-counter {
+                font-variant-numeric: tabular-nums;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header class="gradient-bg text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-exchange text-xl"></i>
+                <h1 class="text-xl font-bold">大小写转换工具</h1>
+            </div>
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                返回工具列表
+            </a>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">文本大小写转换</h2>
+            <p class="text-slate-600 mb-6">支持全大写、全小写、首字母大写、大小写互换等多种转换方式</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- 左侧输入区域 -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-700">输入文本</h3>
+                        <div class="text-xs text-slate-500 text-counter" id="inputCounter">
+                            字符: <span id="inputChars">0</span> | 
+                            单词: <span id="inputWords">0</span> | 
+                            行数: <span id="inputLines">0</span>
+                        </div>
+                    </div>
+                    
+                    <textarea id="inputText" placeholder="请粘贴或输入需要转换的文本..." 
+                        class="w-full h-[250px] p-3 border border-slate-300 rounded-lg resize-y font-mono text-sm"></textarea>
+                    
+                    <!-- 转换选项 -->
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <button data-action="uppercase" class="convert-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            <i class="fa fa-arrow-up mr-1"></i>全大写
+                        </button>
+                        <button data-action="lowercase" class="convert-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            <i class="fa fa-arrow-down mr-1"></i>全小写
+                        </button>
+                        <button data-action="capitalize" class="convert-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            <i class="fa fa-font mr-1"></i>首字母大写
+                        </button>
+                        <button data-action="invert" class="convert-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            <i class="fa fa-exchange mr-1"></i>大小写互换
+                        </button>
+                        <button data-action="capitalize-sentence" class="convert-btn bg-slate-600 text-white px-3 py-2 rounded-lg hover:bg-slate-700 transition-colors text-sm">
+                            句子首字母大写
+                        </button>
+                        <button data-action="alternating" class="convert-btn bg-slate-600 text-white px-3 py-2 rounded-lg hover:bg-slate-700 transition-colors text-sm">
+                            交替大小写
+                        </button>
+                        <button data-action="title-case" class="convert-btn bg-slate-600 text-white px-3 py-2 rounded-lg hover:bg-slate-700 transition-colors text-sm">
+                            标题格式
+                        </button>
+                        <button data-action="clear" class="convert-btn bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                            <i class="fa fa-times mr-1"></i>清空
+                        </button>
+                    </div>
+                    
+                    <!-- 高级选项 -->
+                    <div class="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <h4 class="font-medium text-sm mb-2">高级选项</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <label class="flex items-center text-slate-600">
+                                <input type="checkbox" id="keepPunctuation" checked class="mr-2">
+                                保留标点符号格式
+                            </label>
+                            <label class="flex items-center text-slate-600">
+                                <input type="checkbox" id="ignoreNumbers" checked class="mr-2">
+                                忽略数字和符号
+                            </label>
+                            <label class="flex items-center text-slate-600">
+                                <input type="checkbox" id="trimWhitespace" checked class="mr-2">
+                                自动去除首尾空格
+                            </label>
+                            <label class="flex items-center text-slate-600">
+                                <input type="checkbox" id="normalizeSpaces" class="mr-2">
+                                标准化空格（多个变一个）
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧结果区域 -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-700">转换结果</h3>
+                        <div class="text-xs text-slate-500 text-counter" id="outputCounter">
+                            字符: <span id="outputChars">0</span> | 
+                            单词: <span id="outputWords">0</span> | 
+                            行数: <span id="outputLines">0</span>
+                        </div>
+                    </div>
+                    
+                    <textarea id="outputText" placeholder="转换后的结果将显示在这里..." 
+                        class="w-full h-[250px] p-3 border border-slate-300 rounded-lg resize-y font-mono text-sm bg-slate-50" readonly></textarea>
+                    
+                    <div class="mt-4 flex gap-3">
+                        <button id="copyBtn" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fa fa-copy mr-2"></i>复制结果
+                        </button>
+                        <button id="downloadBtn" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fa fa-download mr-2"></i>导出文本
+                        </button>
+                        <button id="swapBtn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-colors">
+                            <i class="fa fa-refresh mr-1"></i>互换
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 字符统计详情 -->
+            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-4">
+                <h4 class="font-medium mb-2">字符统计详情</h4>
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-blue-600" id="statsTotalChars">0</div>
+                        <div class="text-xs text-slate-600">总字符数</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-red-600" id="statsUpperChars">0</div>
+                        <div class="text-xs text-slate-600">大写字母</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-green-600" id="statsLowerChars">0</div>
+                        <div class="text-xs text-slate-600">小写字母</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-purple-600" id="statsNumbers">0</div>
+                        <div class="text-xs text-slate-600">数字</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-orange-600" id="statsSpaces">0</div>
+                        <div class="text-xs text-slate-600">空格</div>
+                    </div>
+                    <div class="bg-white p-2 rounded text-center">
+                        <div class="font-bold text-gray-600" id="statsSymbols">0</div>
+                        <div class="text-xs text-slate-600">符号</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-4 text-center text-sm">
+        <p>© 2025 在线工具集 - 所有操作均在本地完成，不会上传您的文本</p>
+    </footer>
+
+    <script>
+        // DOM元素
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const convertButtons = document.querySelectorAll('.convert-btn');
+        const keepPunctuation = document.getElementById('keepPunctuation');
+        const ignoreNumbers = document.getElementById('ignoreNumbers');
+        const trimWhitespace = document.getElementById('trimWhitespace');
+        const normalizeSpaces = document.getElementById('normalizeSpaces');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const swapBtn = document.getElementById('swapBtn');
+        
+        // 计数器元素
+        const inputChars = document.getElementById('inputChars');
+        const inputWords = document.getElementById('inputWords');
+        const inputLines = document.getElementById('inputLines');
+        const outputChars = document.getElementById('outputChars');
+        const outputWords = document.getElementById('outputWords');
+        const outputLines = document.getElementById('outputLines');
+        
+        // 统计元素
+        const statsTotalChars = document.getElementById('statsTotalChars');
+        const statsUpperChars = document.getElementById('statsUpperChars');
+        const statsLowerChars = document.getElementById('statsLowerChars');
+        const statsNumbers = document.getElementById('statsNumbers');
+        const statsSpaces = document.getElementById('statsSpaces');
+        const statsSymbols = document.getElementById('statsSymbols');
+        
+        // 转换历史记录
+        let conversionHistory = [];
+
+        // 初始化 - 实时更新输入统计
+        inputText.addEventListener('input', () => {
+            updateInputStats();
+            updateCharacterStats(inputText.value);
+        });
+
+        // 更新输入统计
+        function updateInputStats() {
+            const text = inputText.value;
+            inputChars.textContent = text.length;
+            
+            // 计算单词数（按空格分割）
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            inputWords.textContent = words.length;
+            
+            // 计算行数
+            inputLines.textContent = text.split('\n').length;
+        }
+
+        // 更新输出统计
+        function updateOutputStats(text) {
+            outputChars.textContent = text.length;
+            
+            // 计算单词数
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            outputWords.textContent = words.length;
+            
+            // 计算行数
+            outputLines.textContent = text.split('\n').length;
+        }
+
+        // 更新字符统计详情
+        function updateCharacterStats(text) {
+            let total = text.length;
+            let upper = 0;
+            let lower = 0;
+            let numbers = 0;
+            let spaces = 0;
+            let symbols = 0;
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char >= 'A' && char <= 'Z') {
+                    upper++;
+                } else if (char >= 'a' && char <= 'z') {
+                    lower++;
+                } else if (char >= '0' && char <= '9') {
+                    numbers++;
+                } else if (char === ' ' || char === '\t' || char === '\n' || char === '\r') {
+                    spaces++;
+                } else {
+                    symbols++;
+                }
+            }
+            
+            statsTotalChars.textContent = total;
+            statsUpperChars.textContent = upper;
+            statsLowerChars.textContent = lower;
+            statsNumbers.textContent = numbers;
+            statsSpaces.textContent = spaces;
+            statsSymbols.textContent = symbols;
+        }
+
+        // 处理转换按钮点击
+        convertButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const action = button.getAttribute('data-action');
+                const text = inputText.value;
+                
+                if (action === 'clear') {
+                    inputText.value = '';
+                    outputText.value = '';
+                    updateInputStats();
+                    updateOutputStats('');
+                    updateCharacterStats('');
+                    return;
+                }
+                
+                if (!text) {
+                    alert('请输入需要转换的文本');
+                    return;
+                }
+                
+                // 预处理文本
+                let processedText = text;
+                
+                // 去除首尾空格
+                if (trimWhitespace.checked) {
+                    processedText = processedText.trim();
+                }
+                
+                // 标准化空格
+                if (normalizeSpaces.checked) {
+                    processedText = processedText.replace(/\s+/g, ' ');
+                }
+                
+                // 执行转换
+                let result = '';
+                switch (action) {
+                    case 'uppercase':
+                        result = convertToUppercase(processedText);
+                        break;
+                    case 'lowercase':
+                        result = convertToLowercase(processedText);
+                        break;
+                    case 'capitalize':
+                        result = capitalizeWords(processedText);
+                        break;
+                    case 'invert':
+                        result = invertCase(processedText);
+                        break;
+                    case 'capitalize-sentence':
+                        result = capitalizeSentences(processedText);
+                        break;
+                    case 'alternating':
+                        result = alternatingCase(processedText);
+                        break;
+                    case 'title-case':
+                        result = titleCase(processedText);
+                        break;
+                }
+                
+                // 更新输出
+                outputText.value = result;
+                updateOutputStats(result);
+                updateCharacterStats(result);
+                
+                // 记录转换历史
+                conversionHistory.push({
+                    action: action,
+                    input: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+                    result: result.substring(0, 50) + (result.length > 50 ? '...' : ''),
+                    timestamp: new Date().toLocaleTimeString()
+                });
+            });
+        });
+
+        // 转换函数 - 全大写
+        function convertToUppercase(text) {
+            return text.split('').map(char => {
+                // 忽略数字和符号
+                if (ignoreNumbers.checked && /[^a-zA-Z]/.test(char)) {
+                    return char;
+                }
+                return char.toUpperCase();
+            }).join('');
+        }
+
+        // 转换函数 - 全小写
+        function convertToLowercase(text) {
+            return text.split('').map(char => {
+                // 忽略数字和符号
+                if (ignoreNumbers.checked && /[^a-zA-Z]/.test(char)) {
+                    return char;
+                }
+                return char.toLowerCase();
+            }).join('');
+        }
+
+        // 转换函数 - 单词首字母大写
+        function capitalizeWords(text) {
+            return text.split(' ').map(word => {
+                if (word.length === 0) return '';
+                
+                // 保留标点符号
+                if (keepPunctuation.checked && /^[^a-zA-Z]/.test(word)) {
+                    const nonLetters = word.match(/^[^a-zA-Z]+/)[0];
+                    const letters = word.substring(nonLetters.length);
+                    return nonLetters + capitalizeWord(letters);
+                }
+                
+                return capitalizeWord(word);
+            }).join(' ');
+        }
+
+        // 辅助函数 - 单个单词首字母大写
+        function capitalizeWord(word) {
+            if (word.length === 0) return '';
+            
+            return word.charAt(0).toUpperCase() + 
+                   word.substring(1).toLowerCase();
+        }
+
+        // 转换函数 - 句子首字母大写
+        function capitalizeSentences(text) {
+            // 按句子分隔符分割
+            const sentences = text.split(/([.!?。！？]+)/);
+            let result = '';
+            
+            for (let i = 0; i < sentences.length; i += 2) {
+                const sentence = sentences[i];
+                const punctuation = sentences[i + 1] || '';
+                
+                if (sentence.trim()) {
+                    // 首字母大写，其余小写
+                    const capitalized = sentence.trim().charAt(0).toUpperCase() + 
+                                       sentence.trim().substring(1).toLowerCase();
+                    result += capitalized + punctuation + ' ';
+                } else {
+                    result += sentence + punctuation;
+                }
+            }
+            
+            return result.trim();
+        }
+
+        // 转换函数 - 大小写互换
+        function invertCase(text) {
+            return text.split('').map(char => {
+                if (ignoreNumbers.checked && /[^a-zA-Z]/.test(char)) {
+                    return char;
+                }
+                
+                if (char === char.toUpperCase()) {
+                    return char.toLowerCase();
+                } else if (char === char.toLowerCase()) {
+                    return char.toUpperCase();
+                }
+                return char;
+            }).join('');
+        }
+
+        // 转换函数 - 交替大小写
+        function alternatingCase(text) {
+            let upper = true;
+            return text.split('').map(char => {
+                if (ignoreNumbers.checked && /[^a-zA-Z]/.test(char)) {
+                    return char;
+                }
+                
+                if (/[a-zA-Z]/.test(char)) {
+                    const result = upper ? char.toUpperCase() : char.toLowerCase();
+                    upper = !upper;
+                    return result;
+                }
+                
+                return char;
+            }).join('');
+        }
+
+        // 转换函数 - 标题格式
+        function titleCase(text) {
+            // 不需要大写的介词/冠词
+            const smallWords = /\b(a|an|the|and|but|or|for|nor|in|on|at|to|from|by)\b/gi;
+            
+            return text.split(' ').map((word, index) => {
+                if (index === 0 || !word.match(smallWords)) {
+                    return capitalizeWord(word);
+                }
+                return word.toLowerCase();
+            }).join(' ');
+        }
+
+        // 复制按钮
+        copyBtn.addEventListener('click', async () => {
+            const text = outputText.value;
+            if (!text) {
+                alert('没有可复制的内容');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                // 显示复制成功提示
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa fa-check mr-2"></i>复制成功';
+                copyBtn.classList.remove('bg-green-600');
+                copyBtn.classList.add('bg-green-700');
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.classList.remove('bg-green-700');
+                    copyBtn.classList.add('bg-green-600');
+                }, 2000);
+            } catch (err) {
+                alert('复制失败，请手动复制');
+                console.error(err);
+            }
+        });
+
+        // 下载按钮
+        downloadBtn.addEventListener('click', () => {
+            const text = outputText.value;
+            if (!text) {
+                alert('没有可导出的内容');
+                return;
+            }
+            
+            // 创建Blob
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            // 创建下载链接
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `大小写转换_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // 互换按钮 - 交换输入和输出
+        swapBtn.addEventListener('click', () => {
+            const temp = inputText.value;
+            inputText.value = outputText.value;
+            outputText.value = temp;
+            
+            updateInputStats();
+            updateOutputStats(outputText.value);
+            updateCharacterStats(inputText.value);
+        });
+
+        // 初始化统计
+        updateInputStats();
+        updateOutputStats('');
+        updateCharacterStats('');
+    </script>
+</body>
+</html>
